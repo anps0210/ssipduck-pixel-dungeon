@@ -13,8 +13,9 @@ android {
     }
 
     defaultConfig {
-        manifestPlaceholders = [appName:appName]
-        applicationId appPackageName
+        // Android identity is independent of the Java namespace and other platforms.
+        manifestPlaceholders = [appName:'Ssipduck Pixel Dungeon']
+        applicationId 'com.anps0210.ssipduckpixeldungeon'
 
         versionCode appVersionCode
         versionName appVersionName
