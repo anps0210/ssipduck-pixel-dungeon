@@ -40,16 +40,28 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
 
-      # Reuse the test signing key so successive debug APKs can update in place.
-      # Cache eviction can change this key; this is not a release signing setup.
-      - name: Restore debug signing key
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: android-debug-keystore-v1
+      - name: Restore persistent debug signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_DEBUG_KEYSTORE_BASE64 is required; refusing to generate a different signing key."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/ssipduck-debug.keystore"
+          keytool -list -keystore "$RUNNER_TEMP/ssipduck-debug.keystore" -storepass android -alias androiddebugkey > /dev/null
+          echo "SSIPDUCK_DEBUG_KEYSTORE=$RUNNER_TEMP/ssipduck-debug.keystore" >> "$GITHUB_ENV"
 
       - name: Build debug APK
         run: ./gradlew :android:assembleDebug --no-daemon --stacktrace
+
+      - name: Verify APK signature
+        run: '"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs android/build/outputs/apk/debug/android-debug.apk'
+
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/ssipduck-debug.keystore"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
