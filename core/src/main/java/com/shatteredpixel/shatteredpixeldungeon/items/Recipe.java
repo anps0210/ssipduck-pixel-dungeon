@@ -198,6 +198,7 @@ public abstract class Recipe {
 	};
 	
 	private static Recipe[] twoIngredientRecipes = new Recipe[]{
+        new com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Excalibur.Recipe(),
 		new Blandfruit.CookFruit(),
 		new Bomb.EnhanceBomb(),
 		new UnstableBrew.Recipe(),
@@ -255,6 +256,12 @@ public abstract class Recipe {
 	}
 	
 	public static boolean usableInRecipe(Item item){
+        if (item instanceof com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword
+                || item instanceof com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood) {
+            return item.isIdentified() && !item.cursed
+                    && (com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero == null
+                    || !item.isEquipped(com.shatteredpixel.shatteredpixeldungeon.Dungeon.hero));
+        }
 		//only upgradeable thrown weapons and wands allowed among equipment items
 		if (item instanceof EquipableItem){
 			return item.cursedKnown && !item.cursed &&

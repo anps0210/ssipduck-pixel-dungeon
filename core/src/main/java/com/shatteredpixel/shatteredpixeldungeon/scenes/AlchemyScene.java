@@ -693,6 +693,7 @@ public class AlchemyScene extends PixelScene {
 		
 		if (recipe != null){
 			int cost = recipe.cost(ingredients);
+            if (Dungeon.energy + (toolkit == null ? 0 : toolkit.availableEnergy()) < cost) return;
 			if (toolkit != null){
 				cost = toolkit.consumeEnergy(cost);
 			}

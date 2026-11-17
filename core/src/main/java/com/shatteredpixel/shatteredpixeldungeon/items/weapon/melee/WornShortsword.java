@@ -28,6 +28,20 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 
 public class WornShortsword extends MeleeWeapon {
+    private int scrollUpgrades;
+    public void recordScrollUpgrade() { scrollUpgrades++; }
+    public boolean readyForExcalibur() { return trueLevel() == 5 && scrollUpgrades >= 5; }
+    @Override public void storeInBundle(com.watabou.utils.Bundle bundle) {
+        super.storeInBundle(bundle);
+        bundle.put("saber_scroll_upgrades", scrollUpgrades);
+    }
+    @Override public void restoreFromBundle(com.watabou.utils.Bundle bundle) {
+        super.restoreFromBundle(bundle);
+        // Old saves have no provenance: preserve their existing permanent upgrades.
+        scrollUpgrades = bundle.contains("saber_scroll_upgrades")
+                ? bundle.getInt("saber_scroll_upgrades") : Math.max(0, trueLevel());
+    }
+
 
 	{
 		image = ItemSpriteSheet.WORN_SHORTSWORD;

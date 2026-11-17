@@ -779,6 +779,7 @@ public class WndSettings extends WndTabbed {
 		RenderedTextBlock title;
 		ColorBlock sep1;
 		CheckBox chkNews;
+        CheckBox chkDeveloper;
 		CheckBox chkUpdates;
 		CheckBox chkBetas;
 		CheckBox chkWifi;
@@ -802,6 +803,11 @@ public class WndSettings extends WndTabbed {
 			};
 			chkNews.checked(SPDSettings.news());
 			add(chkNews);
+            chkDeveloper = new CheckBox(Messages.get(WndDeveloper.class, "toggle")) {
+                @Override protected void onClick() { super.onClick(); SPDSettings.developerMode(checked()); }
+            };
+            chkDeveloper.checked(SPDSettings.developerMode());
+            add(chkDeveloper);
 
 			if (Updates.supportsUpdates() && Updates.supportsUpdatePrompts()) {
 				chkUpdates = new CheckBox(Messages.get(this, "updates")) {
@@ -872,7 +878,8 @@ public class WndSettings extends WndTabbed {
 				pos = chkWifi.bottom();
 			}
 
-			height = pos;
+			chkDeveloper.setRect(0, pos + GAP, width, BTN_HEIGHT);
+            height = chkDeveloper.bottom();
 
 		}
 	}

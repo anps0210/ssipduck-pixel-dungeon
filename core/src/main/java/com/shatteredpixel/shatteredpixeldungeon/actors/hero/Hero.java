@@ -1626,6 +1626,8 @@ public class Hero extends Char {
 
 	@Override
 	public void damage( int dmg, Object src ) {
+        if (SPDSettings.developerMode()) return;
+
 		if (buff(TimekeepersHourglass.timeStasis.class) != null
 				|| buff(TimeStasis.class) != null) {
 			return;
@@ -2169,6 +2171,8 @@ public class Hero extends Char {
 
 	@Override
 	public void die( Object cause ) {
+        if (SPDSettings.developerMode()) { HP = Math.max(1, HP); return; }
+
 		
 		curAction = null;
 

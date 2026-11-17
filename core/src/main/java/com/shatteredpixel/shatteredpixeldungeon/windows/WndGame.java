@@ -97,7 +97,12 @@ public class WndGame extends Window {
 			curBtn.icon(Icons.get(Icons.RANKINGS));
 		}
 
-		// Main menu
+        if (SPDSettings.developerMode() && Dungeon.hero != null && Dungeon.hero.isAlive()) {
+            addButton(new RedButton(Messages.get(WndDeveloper.class, "title")) {
+                @Override protected void onClick() { hide(); GameScene.show(new WndDeveloper()); }
+            });
+        }
+        // Main menu
 		addButton(curBtn = new RedButton(Messages.get(this, "menu")) {
 			@Override
 			protected void onClick() {

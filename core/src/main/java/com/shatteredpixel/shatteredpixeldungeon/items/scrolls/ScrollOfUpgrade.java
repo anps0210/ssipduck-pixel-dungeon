@@ -137,7 +137,10 @@ public class ScrollOfUpgrade extends InventoryScroll {
 			item = item.upgrade();
 		}
 
-		Badges.validateItemLevelAquired( item );
+        if (item instanceof com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword) {
+            ((com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.WornShortsword)item).recordScrollUpgrade();
+        }
+        Badges.validateItemLevelAquired( item );
 		Statistics.upgradesUsed++;
 		Badges.validateMageUnlock();
 

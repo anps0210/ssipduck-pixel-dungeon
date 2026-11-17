@@ -53,6 +53,9 @@ jobs:
           keytool -list -keystore "$RUNNER_TEMP/ssipduck-debug.keystore" -storepass android -alias androiddebugkey > /dev/null
           echo "SSIPDUCK_DEBUG_KEYSTORE=$RUNNER_TEMP/ssipduck-debug.keystore" >> "$GITHUB_ENV"
 
+      - name: Test game logic
+        run: ./gradlew :core:test --no-daemon --stacktrace
+
       - name: Build debug APK
         run: ./gradlew :android:assembleDebug --no-daemon --stacktrace
 

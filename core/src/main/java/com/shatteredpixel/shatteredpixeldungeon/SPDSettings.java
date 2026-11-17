@@ -34,6 +34,9 @@ import com.watabou.utils.Point;
 import java.util.Locale;
 
 public class SPDSettings extends GameSettings {
+    public static boolean developerMode() { return getBoolean("developer_mode", false); }
+    public static void developerMode(boolean enabled) { put("developer_mode", enabled); }
+
 	
 	//Version info
 	
