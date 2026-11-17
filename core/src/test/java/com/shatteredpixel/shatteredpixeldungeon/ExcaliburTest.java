@@ -50,8 +50,10 @@ public class ExcaliburTest {
         WornShortsword restored=new WornShortsword(); restored.restoreFromBundle(bundle);
         assertTrue(restored.readyForExcalibur());
         Bundle fake=new Bundle(); sword(5,0).storeInBundle(fake);
-        restored.restoreFromBundle(fake); assertFalse(restored.readyForExcalibur());
+        restored = new WornShortsword(); restored.restoreFromBundle(fake);
+        assertEquals(5, restored.trueLevel()); assertFalse(restored.readyForExcalibur());
         Bundle legacy=new Bundle(); legacy.put("level",5); legacy.put("quantity",1);
-        restored.restoreFromBundle(legacy); assertTrue(restored.readyForExcalibur());
+        restored = new WornShortsword(); restored.restoreFromBundle(legacy);
+        assertEquals(5, restored.trueLevel()); assertTrue(restored.readyForExcalibur());
     }
 }
