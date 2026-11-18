@@ -22,6 +22,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Excalibur;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Bones;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -268,6 +269,10 @@ public class Hero extends Char {
 			HT += buff(ElixirOfMight.HTBoost.class).boost();
 		}
 		
+        // Flat equipment bonus, not multiplied by Ring of Might.
+        HT += com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood.maxHealthBonus(this);
+        HT += Excalibur.maxHealthBonus(this);
+
 		if (boostHP){
 			HP += Math.max(HT - curHT, 0);
 		}
@@ -346,6 +351,11 @@ public class Hero extends Char {
 		STR = bundle.getInt( STRENGTH );
 
 		belongings.restoreFromBundle( bundle );
+        // Recalculate flat equipment bonuses only after all equipment has been restored.
+        if (buff(com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood.chaliceRegen.class) != null
+                || Excalibur.maxHealthBonus(this) > 0) {
+            updateHT(false);
+        }
 	}
 	
 	public static void preview( GamesInProgress.Info info, Bundle bundle ) {

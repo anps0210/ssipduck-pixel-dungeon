@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.SpiritForm;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood;
 import com.shatteredpixel.shatteredpixeldungeon.items.rings.RingOfEnergy;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Excalibur;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ChaoticCenser;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.SaltCube;
 import com.shatteredpixel.shatteredpixeldungeon.levels.VaultLevel;
@@ -74,8 +75,16 @@ public class Regeneration extends Buff {
 						//15% boost at +0, scaling to a 500% boost at +10
 						delay -= 1.33f + chaliceLevel*0.667f;
 						delay /= RingOfEnergy.artifactChargeMultiplier(target);
+                        delay /= ChaliceOfBlood.HEALING_MULTIPLIER;
 					}
 				}
+
+                // Use the stronger recovery benefit; retain a cursed Avalon's slowdown.
+                float excaliburRegen = Excalibur.regenerationMultiplier((Hero) target);
+                if (excaliburRegen > 1f) {
+                    delay = Math.min(delay, REGENERATION_DELAY / excaliburRegen
+                            * (chaliceCursed ? 1.5f : 1f));
+                }
 
 				//salt cube is turned off while regen is disabled.
 				if (target.buff(LockedFloor.class) == null) {

@@ -49,6 +49,35 @@ import com.watabou.utils.Random;
 import java.util.ArrayList;
 
 public class ChaliceOfBlood extends Artifact {
+    public static final float HEALING_MULTIPLIER = 1.05f;
+    private boolean refreshingPassive;
+
+    public static int maxHealthBonus(Hero hero) {
+        chaliceRegen buff = hero.buff(chaliceRegen.class);
+        return buff == null ? 0 : 2 * Math.max(0, Math.min(10, buff.itemLevel()));
+    }
+
+    private void updateTargetHT() {
+        if (!refreshingPassive && !com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings.bundleRestoring
+                && passiveBuff != null && passiveBuff.target instanceof Hero) {
+            ((Hero) passiveBuff.target).updateHT(false);
+        }
+    }
+
+    @Override public void activate(com.shatteredpixel.shatteredpixeldungeon.actors.Char ch) {
+        refreshingPassive = true;
+        try { super.activate(ch); } finally { refreshingPassive = false; }
+        updateTargetHT();
+    }
+
+    @Override public Item level(int value) {
+        super.level(value); updateTargetHT(); return this;
+    }
+
+    @Override public Item degrade() {
+        super.degrade(); updateTargetHT(); return this;
+    }
+
 
 	{
 		image = ItemSpriteSheet.ARTIFACT_CHALICE1;
@@ -173,7 +202,9 @@ public class ChaliceOfBlood extends Artifact {
 			image = ItemSpriteSheet.ARTIFACT_CHALICE3;
 		else if (level() >= 2)
 			image = ItemSpriteSheet.ARTIFACT_CHALICE2;
-		return super.upgrade();
+		super.upgrade();
+        updateTargetHT();
+        return this;
 	}
 
 	@Override
@@ -197,7 +228,7 @@ public class ChaliceOfBlood extends Artifact {
 
 		float healDelay = 10f - (1.33f + level()*0.667f);
 		healDelay /= amount;
-		float heal = 5f/healDelay;
+		float heal = (5f/healDelay) * HEALING_MULTIPLIER;
 		//effectively 0.5/1/1.5/2/2.5 HP per turn at +0/+6/+8/+9/+10
 		if (Random.Float() < heal%1){
 			heal++;
@@ -232,7 +263,18 @@ public class ChaliceOfBlood extends Artifact {
 	}
 
 	public class chaliceRegen extends ArtifactBuff {
-		//see Regeneration.class for effect
+		// Recompute rather than accumulating bonuses, including on unequip/removal.
+        @Override public boolean attachTo(com.shatteredpixel.shatteredpixeldungeon.actors.Char target) {
+            if (!super.attachTo(target)) return false;
+            updateTargetHT();
+            return true;
+        }
+        @Override public void detach() {
+            com.shatteredpixel.shatteredpixeldungeon.actors.Char previous = target;
+            super.detach();
+            if (!refreshingPassive && !com.shatteredpixel.shatteredpixeldungeon.actors.hero.Belongings.bundleRestoring
+                    && previous instanceof Hero) ((Hero)previous).updateHT(false);
+        }
 	}
 
 }

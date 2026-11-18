@@ -1,6 +1,9 @@
 package com.shatteredpixel.shatteredpixeldungeon;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.items.Recipe;
 import com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Excalibur;
@@ -55,5 +58,63 @@ public class ExcaliburTest {
         Bundle legacy=new Bundle(); legacy.put("level",5); legacy.put("quantity",1);
         restored = new WornShortsword(); restored.restoreFromBundle(legacy);
         assertEquals(5, restored.trueLevel()); assertTrue(restored.readyForExcalibur());
+    }
+    @Test public void passivesWorkAtZeroChargeWithoutHealingOrDuplicateBonuses() {
+        Hero hero = new Hero();
+        Excalibur sword = new Excalibur();
+        hero.HP = 17;
+        assertEquals(0, Excalibur.maxHealthBonus(hero));
+        hero.belongings.weapon = sword;
+        sword.activate(hero);
+        assertEquals(0, sword.chargePercent());
+        assertEquals(36, hero.HT);
+        assertEquals(17, hero.HP);
+        assertEquals(4f, Excalibur.regenerationMultiplier(hero), 0f);
+        hero.HP = 35;
+        sword.activate(hero);
+        assertEquals(35, hero.HP);
+        Excalibur secondary = new Excalibur();
+        hero.belongings.secondWep = secondary;
+        secondary.activate(hero);
+        assertEquals(36, hero.HT);
+        assertEquals(1, hero.buffs(Excalibur.ExcaliburCharge.class).size());
+        Buff.affect(hero, MagicImmune.class);
+        assertEquals(1f, Excalibur.regenerationMultiplier(hero), 0f);
+        hero.belongings.weapon = hero.belongings.secondWep = null;
+        hero.buff(Excalibur.ExcaliburCharge.class).act();
+        assertEquals(20, hero.HT);
+        assertEquals(20, hero.HP);
+        assertNull(hero.buff(Excalibur.ExcaliburCharge.class));
+    }
+
+    @Test public void chargeCapsPersistsAndDoesNotChangeBaseDamage() {
+        Hero hero = new Hero();
+        Excalibur sword = new Excalibur();
+        hero.belongings.weapon = sword;
+        sword.activate(hero);
+        for (int i = 0; i < 37; i++) hero.buff(Excalibur.ExcaliburCharge.class).act();
+        assertEquals("37%", sword.status());
+        Bundle saved = new Bundle();
+        sword.storeInBundle(saved);
+        Excalibur restored = new Excalibur();
+        restored.restoreFromBundle(saved);
+        assertEquals(37, restored.chargePercent());
+        for (int i = 0; i < 100; i++) hero.buff(Excalibur.ExcaliburCharge.class).act();
+        assertEquals(100, sword.chargePercent());
+        assertEquals(5, sword.min(0));
+        assertEquals(30, sword.max(0));
+        assertEquals(4f, Excalibur.regenerationMultiplier(hero), 0f);
+        hero.belongings.weapon = null;
+        hero.buff(Excalibur.ExcaliburCharge.class).act();
+        assertEquals(100, sword.chargePercent());
+    }
+
+    @Test public void legacySwordStartsUncharged() {
+        Bundle legacy = new Bundle();
+        legacy.put("level", 0);
+        legacy.put("quantity", 1);
+        Excalibur sword = new Excalibur();
+        sword.restoreFromBundle(legacy);
+        assertEquals(0, sword.chargePercent());
     }
 }

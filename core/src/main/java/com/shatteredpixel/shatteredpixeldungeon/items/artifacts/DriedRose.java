@@ -31,6 +31,17 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.CorrosiveGas;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AllyBuff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.AscensionChallenge;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Burning;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.ShieldBuff;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Warlock;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Shaman;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DM100;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Eye;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CrystalWisp;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.YogFist;
+import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.GnollGeomancer;
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.ui.BuffIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Invisibility;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.MagicImmune;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Regeneration;
@@ -553,6 +564,77 @@ public class DriedRose extends Artifact {
 		}
 		
 		private DriedRose rose = null;
+        private boolean battleContinuationUsed;
+        private boolean dead;
+
+        @Override
+        public boolean isAlive() {
+            if (dead) return false;
+            if (super.isAlive()) return true;
+            if (!battleContinuationUsed) {
+                battleContinuationUsed = true;
+                BattleContinuation shield = Buff.affect(this, BattleContinuation.class);
+                shield.setShield(HT / 2 + 4);
+                // Allow a full turn before the first decay tick.
+                shield.delay(TICK);
+                if (sprite != null) {
+                    sprite.showStatusWithIcon(CharSprite.POSITIVE,
+                            Integer.toString(shield.shielding()), FloatingText.SHIELDING);
+                }
+            }
+            BattleContinuation shield = buff(BattleContinuation.class);
+            return shield != null && shield.shielding() > 0;
+        }
+
+        @Override
+        public void storeInBundle(Bundle bundle) {
+            super.storeInBundle(bundle);
+            bundle.put("lancer_continuation_used", battleContinuationUsed);
+            bundle.put("lancer_dead", dead);
+        }
+
+        @Override
+        public void restoreFromBundle(Bundle bundle) {
+            super.restoreFromBundle(bundle);
+            battleContinuationUsed = bundle.getBoolean("lancer_continuation_used");
+            dead = bundle.getBoolean("lancer_dead");
+        }
+
+        /** Direct projectiles and non-adjacent attacks; hero melee reach is excluded. */
+        public boolean isRangedDamage(Object src) {
+            if (src instanceof Warlock.DarkBolt || src instanceof Shaman.EarthenBolt
+                    || src instanceof DM100.LightningBolt || src instanceof Eye.DeathGaze
+                    || src instanceof CrystalWisp.LightBeam || src instanceof YogFist.BrightFist.LightBeam
+                    || src instanceof YogFist.DarkFist.DarkBolt || src instanceof GnollGeomancer.Boulder
+                    || src instanceof MissileWeapon) return true;
+            if (src instanceof Hero) {
+                return ((Hero) src).belongings.attackingWeapon() instanceof MissileWeapon;
+            }
+            return src instanceof Char && Dungeon.level != null
+                    && !Dungeon.level.adjacent(((Char) src).pos, pos);
+        }
+
+        public static class BattleContinuation extends ShieldBuff {
+            { type = buffType.POSITIVE; detachesAtZero = false; }
+
+            @Override public boolean act() {
+                if (target.HP > 0) {
+                    detach();
+                    return true;
+                }
+                absorbDamage(4);
+                Item.updateQuickslot();
+                if (shielding() <= 0) {
+                    target.die(this);
+                } else {
+                    spend(TICK);
+                }
+                return true;
+            }
+
+            @Override public int icon() { return BuffIndicator.FURY; }
+            @Override public String desc() { return Messages.get(this, "desc", shielding()); }
+        }
 		
 		public GhostHero(){
 			super();
@@ -648,6 +730,7 @@ public class DriedRose extends Artifact {
 			if (weapon() != null){
 				delay *= weapon().delayFactor(this);
 			}
+            if (buff(BattleContinuation.class) != null && HP <= 0) delay *= 0.5f;
 			return delay;
 		}
 		
@@ -700,6 +783,7 @@ public class DriedRose extends Artifact {
 		
 		@Override
 		public void damage(int dmg, Object src) {
+            if (dmg > 0 && isRangedDamage(src)) dmg = Math.round(dmg * 0.1f);
 			super.damage( dmg, src );
 			
 			//for the rose status indicator
@@ -771,8 +855,12 @@ public class DriedRose extends Artifact {
 
 		@Override
 		public void die(Object cause) {
-			sayDefeated();
+            if (dead) return;
+            dead = true;
+            battleContinuationUsed = true;
+            GLog.n(Messages.get(this, "lancer_dead"));
 			super.die(cause);
+            Item.updateQuickslot();
 		}
 
 		@Override

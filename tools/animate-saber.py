@@ -96,6 +96,12 @@ def transfer(source, reference, boxes, owners, frame):
             dx = max(-min(x for x,y in points), min(dx, W-1-max(x for x,y in points)))
             dy = max(-min(y for x,y in points), min(dy, H-1-max(y for x,y in points)))
         offsets[name] = (dx,dy)
+    # Keep the trunk and skirt attached to the rigid head: independent patch
+    # matches can otherwise split a small face or open holes through the chest.
+    if 'head' in offsets:
+        for part in ('torso', 'skirt'):
+            if part in offsets:
+                offsets[part] = offsets['head']
     out = Image.new('RGBA', (W,H))
     clipped = 0
     # Back-to-front layering; head last protects face/hair from arm overlap.
