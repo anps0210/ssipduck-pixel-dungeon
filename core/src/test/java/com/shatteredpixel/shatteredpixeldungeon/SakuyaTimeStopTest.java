@@ -51,6 +51,59 @@ public class SakuyaTimeStopTest {
         Mob m = new Mob() {}; m.HP = m.HT = 20; m.pos = pos;
         m.alignment = Char.Alignment.ENEMY; Actor.add(m); room.mobs.add(m); mobs.add(m); return m;
     }
+    static class SelectionStop extends SakuyaTimeStop {
+        int confirmations, prompts;
+        @Override public void confirmEnd() { confirmations++; }
+        @Override public void promptTargets() { prompts++; }
+        com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector.Listener selector() {
+            return createTargetSelector();
+        }
+    }
+    @Test public void targetButtonOnlyAppearsForCheckMaidIncludingRestoredStops() {
+        for (HeroSubClass subclass : new HeroSubClass[]{HeroSubClass.NONE, HeroSubClass.FREERUNNER, HeroSubClass.ASSASSIN}) {
+            hero.subClass = subclass;
+            SakuyaTimeStop stop = SakuyaTimeStop.start(hero,5,null);
+            assertEquals(subclass == HeroSubClass.ASSASSIN, ActionIndicator.action == stop);
+            Bundle b = new Bundle(); stop.storeInBundle(b); hero.remove(stop);
+            ActionIndicator.clearAction();
+            SakuyaTimeStop restored = new SakuyaTimeStop(); restored.restoreFromBundle(b);
+            assertNull(ActionIndicator.action);
+            // Hero restores buffs before restoring its subclass.
+            hero.subClass = HeroSubClass.NONE; restored.attachTo(hero);
+            hero.subClass = subclass; restored.refreshAction();
+            assertEquals(subclass == HeroSubClass.ASSASSIN, ActionIndicator.action == restored);
+            if (subclass != HeroSubClass.ASSASSIN) {
+                restored.doAction();
+                assertNotNull(hero.buff(SakuyaTimeStop.class));
+                assertFalse(restored.pending());
+            }
+            restored.finish();
+        }
+    }
+    @Test public void selectionCleanupDoesNotOpenConfirmationOrEndTimeStop() {
+        SakuyaTimeStop initial = SakuyaTimeStop.start(hero,5,null);
+        Bundle b = new Bundle(); initial.storeInBundle(b); hero.remove(initial);
+        SelectionStop stop = new SelectionStop(); stop.restoreFromBundle(b); stop.attachTo(hero);
+        Mob m = enemy(45);
+        com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector.Listener listener = stop.selector();
+        listener.onSelect(m.pos);
+        listener.onSelect(null); // GameScene.ready() replacing the completed listener.
+        listener.onSelect(null);
+        assertEquals(1,stop.markedCount());
+        assertEquals(0,stop.confirmations); assertEquals(0,stop.prompts);
+        assertEquals(5f,stop.remaining(),0f); assertFalse(stop.pending());
+        listener = stop.selector();
+        listener.onSelect(null); listener.onSelect(null);
+        assertEquals(1,stop.confirmations); // Actual cancellation is handled exactly once.
+    }
+    @Test public void expiredSelectionReopensOnceWithoutSpuriousCancellation() {
+        SelectionStop stop = new SelectionStop(); stop.attachTo(hero); stop.requestEnd();
+        Mob m = enemy(45);
+        com.shatteredpixel.shatteredpixeldungeon.scenes.CellSelector.Listener listener = stop.selector();
+        listener.onSelect(m.pos); listener.onSelect(null);
+        assertTrue(stop.pending()); assertEquals(1,stop.markedCount());
+        assertEquals(1,stop.prompts); assertEquals(0,stop.confirmations);
+    }
     @Test public void marksAreFreeUniqueAndResolveFromOriginalPositionOnlyAtEnd() {
         SakuyaTimeStop stop = SakuyaTimeStop.start(hero,10,null);
         Mob a=enemy(45),b=enemy(46);

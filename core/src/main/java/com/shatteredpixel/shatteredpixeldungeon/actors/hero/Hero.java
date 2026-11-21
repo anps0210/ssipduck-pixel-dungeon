@@ -343,6 +343,8 @@ public class Hero extends Char {
 
 		heroClass = bundle.getEnum( CLASS, HeroClass.class );
 		subClass = bundle.getEnum( SUBCLASS, HeroSubClass.class );
+        SakuyaTimeStop restoredStop = buff(SakuyaTimeStop.class);
+        if (restoredStop != null) restoredStop.refreshAction();
 		armorAbility = (ArmorAbility)bundle.get( ABILITY );
 		Talent.restoreTalentsFromBundle( bundle, this );
 		

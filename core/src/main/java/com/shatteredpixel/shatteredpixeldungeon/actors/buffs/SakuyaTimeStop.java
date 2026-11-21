@@ -57,8 +57,17 @@ public class SakuyaTimeStop extends Buff implements ActionIndicator.Action {
         stop.attachTo(hero);
         if (hero.hasTalent(Talent.SUCKER_PUNCH)) Buff.affect(hero, FirstStrike.class).strikes = hero.pointsInTalent(Talent.SUCKER_PUNCH);
         if (hero.hasTalent(Talent.PROTECTIVE_SHADOWS)) Buff.affect(hero, Talent.ProtectiveShadowsTracker.class);
-        ActionIndicator.setAction(stop);
+        stop.refreshAction();
         return stop;
+    }
+    public void refreshAction() {
+        if (checkmate() && !resolving) ActionIndicator.setAction(this);
+        else ActionIndicator.clearAction(this);
+    }
+    @Override public boolean attachTo(Char target) {
+        if (!super.attachTo(target)) return false;
+        refreshAction();
+        return true;
     }
     public boolean fromWatch() { return watchId == 1; }
     public float remaining() { return remaining; }
@@ -114,8 +123,19 @@ public class SakuyaTimeStop extends Buff implements ActionIndicator.Action {
     public void promptTargets() {
         if (selecting || resolving || target == null || !checkmate()) return;
         selecting = true;
-        Game.runOnRenderThread(() -> GameScene.selectCell(new CellSelector.Listener() {
+        Game.runOnRenderThread(() -> {
+            if (resolving || target == null || !checkmate()) { selecting = false; return; }
+            GameScene.selectCell(createTargetSelector());
+        });
+    }
+    protected CellSelector.Listener createTargetSelector() {
+        return new CellSelector.Listener() {
+            private boolean handled;
             public void onSelect(Integer cell) {
+                // GameScene.ready() sends onSelect(null) when replacing this listener
+                // after a successful selection. That is cleanup, not another cancellation.
+                if (handled || resolving) return;
+                handled = true;
                 selecting = false;
                 if (cell == null) { confirmEnd(); return; }
                 if (!mark(Actor.findChar(cell))) GLog.w(Messages.get(SakuyaTimeStop.this, "invalid"));
@@ -126,13 +146,23 @@ public class SakuyaTimeStop extends Buff implements ActionIndicator.Action {
                 return Messages.get(SakuyaTimeStop.this, "prompt",
                         Preparation.AttackLevel.getLvl(waited).blinkDistance(), marks.size());
             }
-        }));
+        };
     }
     public void confirmEnd() {
+        if (selecting || resolving || !checkmate()) return;
+        selecting = true;
         Game.runOnRenderThread(() -> GameScene.show(new WndOptions(
                 Messages.get(this, "name"), Messages.get(this, "confirm"),
                 Messages.get(this, "continue"), Messages.get(this, "finish")) {
-            protected void onSelect(int index) { if (index == 1) finish(); else promptTargets(); }
+            protected void onSelect(int index) {
+                selecting = false;
+                if (index == 1) finish(); else promptTargets();
+            }
+            @Override public void onBackPressed() {
+                super.onBackPressed();
+                selecting = false;
+                if (pending()) promptTargets();
+            }
         }));
     }
     public void finish() {
@@ -183,6 +213,7 @@ public class SakuyaTimeStop extends Buff implements ActionIndicator.Action {
     }
     @Override public void fx(boolean on) {
         if (!(target instanceof Hero)) return;
+        if (on) refreshAction();
         Emitter.freezeEmitters = on;
         if (Dungeon.level == null) return;
         for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])) {
@@ -197,7 +228,7 @@ public class SakuyaTimeStop extends Buff implements ActionIndicator.Action {
     @Override public int actionIcon() { return HeroIcon.PREPARATION; }
     @Override public Visual primaryVisual() { return new HeroIcon(this); }
     @Override public int indicatorColor() { return 0x99CCFF; }
-    @Override public void doAction() { if (checkmate()) promptTargets(); else requestEnd(); }
+    @Override public void doAction() { if (checkmate()) promptTargets(); }
     @Override public void storeInBundle(Bundle b) {
         super.storeInBundle(b);
         b.put("remaining",remaining); b.put("elapsed",elapsed); b.put("waited",waited);
@@ -220,7 +251,8 @@ public class SakuyaTimeStop extends Buff implements ActionIndicator.Action {
         int[] ids=b.getIntArray("ids"), stages=b.getIntArray("stages");
         for(int i=0;i<Math.min(ids.length,stages.length);i++) marks.put(ids[i],stages[i]);
         for(int cell:b.getIntArray("presses")) presses.add(cell);
-        ActionIndicator.setAction(this);
+        // The hero subclass is restored after its buffs; register after attachment
+        // and again once Hero.restoreFromBundle has restored the subclass.
     }
     public static class FirstStrike extends Buff {
         private int strikes = 1;
