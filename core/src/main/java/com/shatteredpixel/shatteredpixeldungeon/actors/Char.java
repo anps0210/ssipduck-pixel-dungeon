@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SakuyaTimeStop;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -625,7 +626,7 @@ public abstract class Char extends Actor {
 		}
 
 		//invisible chars always hit (for the hero this is surprise attacking)
-		if (attacker.invisible > 0 && attacker.canSurpriseAttack()){
+		if ((attacker.invisible > 0 || SakuyaTimeStop.surprise(attacker)) && attacker.canSurpriseAttack()){
 			acuStat = INFINITE_ACCURACY;
 		}
 
@@ -1149,6 +1150,8 @@ public abstract class Char extends Actor {
 
 	@Override
 	protected void spendConstant(float time) {
+        SakuyaTimeStop stop = buff(SakuyaTimeStop.class);
+        if (stop != null && time >= 0) { stop.processTime(time); return; }
 		TimekeepersHourglass.timeFreeze freeze = buff(TimekeepersHourglass.timeFreeze.class);
 		if (freeze != null) {
 			freeze.processTime(time);

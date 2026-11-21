@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.levels;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SakuyaTimeStop;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
@@ -610,6 +611,8 @@ public abstract class Level implements Bundlable {
 
 	//some buff effects have special logic or are cancelled from the hero before transitioning levels
 	public static void beforeTransition(){
+        SakuyaTimeStop stopped = Dungeon.hero.buff(SakuyaTimeStop.class);
+        if (stopped != null) stopped.beforeTransition();
 
 		//time freeze effects need to resolve their pressed cells before transitioning
 		TimekeepersHourglass.timeFreeze timeFreeze = Dungeon.hero.buff(TimekeepersHourglass.timeFreeze.class);
@@ -1267,8 +1270,11 @@ public abstract class Level implements Bundlable {
 		Swiftthistle.TimeBubble bubble =
 				Dungeon.hero.buff(Swiftthistle.TimeBubble.class);
 
+        SakuyaTimeStop stopped = Dungeon.hero.buff(SakuyaTimeStop.class);
 		if (trap != null) {
-			if (bubble != null){
+            if (stopped != null) {
+                discover(cell); stopped.delayPress(cell);
+            } else if (bubble != null){
 				Sample.INSTANCE.play(Assets.Sounds.TRAP);
 				discover(cell);
 				bubble.setDelayedPress(cell);
@@ -1289,7 +1295,9 @@ public abstract class Level implements Bundlable {
 		
 		Plant plant = plants.get( cell );
 		if (plant != null) {
-			if (bubble != null){
+            if (stopped != null) {
+                stopped.delayPress(cell);
+            } else if (bubble != null){
 				Sample.INSTANCE.play(Assets.Sounds.TRAMPLE, 1, Random.Float( 0.96f, 1.05f ) );
 				bubble.setDelayedPress(cell);
 

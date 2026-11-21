@@ -130,6 +130,7 @@ public class Preparation extends Buff implements ActionIndicator.Action {
 	}
 	
 	private int turnsInvis = 0;
+	public void setCheckmateTurns(int turns) { turnsInvis = Math.max(0, turns); }
 	
 	@Override
 	public boolean act() {

@@ -46,9 +46,6 @@ public class Invisibility extends FlavourBuff {
 	public boolean attachTo( Char target ) {
 		if (super.attachTo( target )) {
 			target.invisible++;
-			if (target instanceof Hero && ((Hero) target).subClass == HeroSubClass.ASSASSIN){
-				Buff.affect(target, Preparation.class);
-			}
 			if (target instanceof Hero && ((Hero) target).hasTalent(Talent.PROTECTIVE_SHADOWS)){
 				Buff.affect(target, Talent.ProtectiveShadowsTracker.class);
 			}
@@ -97,7 +94,10 @@ public class Invisibility extends FlavourBuff {
 			cloakBuff.dispel();
 		}
 
-		//these aren't forms of invisibility, but do dispel at the same time as it.
+		SakuyaTimeStop stopped = ch.buff(SakuyaTimeStop.class);
+        if (stopped != null) stopped.requestEnd();
+
+        //these aren't forms of invisibility, but do dispel at the same time as it.
 		TimekeepersHourglass.timeFreeze timeFreeze = ch.buff( TimekeepersHourglass.timeFreeze.class );
 		if (timeFreeze != null) {
 			timeFreeze.detach();

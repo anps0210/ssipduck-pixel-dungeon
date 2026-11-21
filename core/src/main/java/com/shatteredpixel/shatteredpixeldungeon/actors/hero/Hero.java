@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SakuyaTimeStop;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Excalibur;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
@@ -351,6 +352,12 @@ public class Hero extends Char {
 		STR = bundle.getInt( STRENGTH );
 
 		belongings.restoreFromBundle( bundle );
+        if (hasTalent(Talent.LIGHT_CLOAK)) {
+            com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass watch =
+                    belongings.getItem(com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass.class);
+            if (watch != null && !watch.isEquipped(this)) watch.activate(this);
+        }
+
         // Recalculate flat equipment bonuses only after all equipment has been restored.
         if (buff(com.shatteredpixel.shatteredpixeldungeon.items.artifacts.ChaliceOfBlood.chaliceRegen.class) != null
                 || Excalibur.maxHealthBonus(this) > 0) {
@@ -845,6 +852,10 @@ public class Hero extends Char {
 	
 	@Override
 	public boolean act() {
+        SakuyaTimeStop stopped = buff(SakuyaTimeStop.class);
+        if (stopped != null && stopped.pending()) {
+            resting = false; curAction = null; ready(); stopped.promptTargets(); return false;
+        }
 		
 		//calls to dungeon.observe will also update hero's local FOV.
 		fieldOfView = Dungeon.level.heroFOV;
@@ -1468,6 +1479,12 @@ public class Hero extends Char {
 	private boolean actAttack( HeroAction.Attack action ) {
 
 		attackTarget = action.target;
+        SakuyaTimeStop stopped = buff(SakuyaTimeStop.class);
+        if (stopped != null && stopped.checkmate()) {
+            if (!stopped.mark(attackTarget)) GLog.w(Messages.get(stopped, "invalid"));
+            curAction = null; ready(); return false;
+        }
+
 
 		if (isCharmedBy(attackTarget)){
 			GLog.w( Messages.get(Charm.class, "cant_attack"));
@@ -1513,6 +1530,9 @@ public class Hero extends Char {
 	}
 	
 	public void rest( boolean fullRest ) {
+        SakuyaTimeStop stopped = buff(SakuyaTimeStop.class);
+        if (stopped != null) { stopped.waitedTurn(); fullRest = false; }
+
 		spendAndNextConstant( TIME_TO_REST );
 		if (hasTalent(Talent.HOLD_FAST)){
 			if (heroClass != HeroClass.WARRIOR || buff(BrokenSeal.WarriorShield.class) != null) {

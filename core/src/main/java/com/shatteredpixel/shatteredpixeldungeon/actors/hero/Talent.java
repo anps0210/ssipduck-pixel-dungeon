@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SakuyaTimeStop;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
@@ -219,8 +220,14 @@ public enum Talent {
 
 		@Override
 		public boolean act() {
+            stoppedTurn();
+			spend( TICK );
+			return true;
+		}
+
+        public void stoppedTurn() {
 			//barrier every 2/1 turns, to a max of 3/5
-			if (((Hero)target).hasTalent(Talent.PROTECTIVE_SHADOWS) && target.invisible > 0){
+			if (((Hero)target).hasTalent(Talent.PROTECTIVE_SHADOWS) && SakuyaTimeStop.stealth(target)){
 				Barrier barrier = Buff.affect(target, Barrier.class);
 				if (barrier.shielding() < 1 + 2*((Hero)target).pointsInTalent(Talent.PROTECTIVE_SHADOWS)) {
 					barrierInc += 0.5f * ((Hero) target).pointsInTalent(Talent.PROTECTIVE_SHADOWS);
@@ -234,9 +241,7 @@ public enum Talent {
 			} else {
 				detach();
 			}
-			spend( TICK );
-			return true;
-		}
+        }
 
 		private static final String BARRIER_INC = "barrier_inc";
 		@Override
@@ -531,15 +536,15 @@ public enum Talent {
 			}
 		}
 
-		if (talent == PROTECTIVE_SHADOWS && hero.invisible > 0){
+		if (talent == PROTECTIVE_SHADOWS && SakuyaTimeStop.stealth(hero)){
 			Buff.affect(hero, Talent.ProtectiveShadowsTracker.class);
 		}
 
 		if (talent == LIGHT_CLOAK && hero.heroClass == HeroClass.ROGUE){
 			for (Item item : Dungeon.hero.belongings.backpack){
-				if (item instanceof CloakOfShadows){
+				if (item instanceof com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass){
 					if (!hero.belongings.lostInventory() || item.keptThroughLostInventory()) {
-						((CloakOfShadows) item).activate(Dungeon.hero);
+						((com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass) item).activate(Dungeon.hero);
 					}
 				}
 			}
@@ -764,11 +769,13 @@ public enum Talent {
 			// 2/3 empowered wand zaps
 			Buff.affect(hero, ScrollEmpower.class).reset((int) (factor * (1 + hero.pointsInTalent(INSCRIBED_POWER))));
 		}
-		if (hero.hasTalent(INSCRIBED_STEALTH)){
-			// 3/5 turns of stealth
-			Buff.affect(hero, Invisibility.class, factor * (1 + 2*hero.pointsInTalent(INSCRIBED_STEALTH)));
-			Sample.INSTANCE.play( Assets.Sounds.MELD );
-		}
+        if (hero.hasTalent(INSCRIBED_STEALTH) && Scroll.class.isAssignableFrom(cls) && factor > 0
+                && hero.buff(SakuyaTimeStop.ScrollCooldown.class) == null
+                && !SakuyaTimeStop.active(hero)) {
+            SakuyaTimeStop.start(hero, 1 + 2*hero.pointsInTalent(INSCRIBED_STEALTH), null);
+            Buff.affect(hero, SakuyaTimeStop.ScrollCooldown.class, 100f);
+        }
+
 		if (hero.hasTalent(RECALL_INSCRIPTION) && Scroll.class.isAssignableFrom(cls) && cls != ScrollOfUpgrade.class){
 			if (hero.heroClass == HeroClass.CLERIC){
 				Buff.prolong(hero, RecallInscription.UsedItemTracker.class, hero.pointsInTalent(RECALL_INSCRIPTION) == 2 ? 300 : 10).item = cls;
@@ -879,12 +886,9 @@ public enum Talent {
 			hero.buff(LingeringMagicTracker.class).detach();
 		}
 
-		if (hero.hasTalent(Talent.SUCKER_PUNCH)
-				&& enemy instanceof Mob && ((Mob) enemy).surprisedBy(hero)
-				&& enemy.buff(SuckerPunchTracker.class) == null){
-			dmg += Random.IntRange(hero.pointsInTalent(Talent.SUCKER_PUNCH) , 2);
-			Buff.affect(enemy, SuckerPunchTracker.class);
-		}
+        // Consume one guaranteed surprise strike, with no old damage bonus.
+        SakuyaTimeStop.FirstStrike strike = hero.buff(SakuyaTimeStop.FirstStrike.class);
+        if (strike != null) strike.consume();
 
 		if (hero.hasTalent(Talent.FOLLOWUP_STRIKE) && enemy.isAlive() && enemy.alignment == Char.Alignment.ENEMY) {
 			if (hero.belongings.attackingWeapon() instanceof MissileWeapon) {

@@ -21,6 +21,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.items.artifacts;
 
+import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SakuyaTimeStop;
+import com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
@@ -84,74 +86,56 @@ public class TimekeepersHourglass extends Artifact {
 	@Override
 	public ArrayList<String> actions( Hero hero ) {
 		ArrayList<String> actions = super.actions( hero );
-		if (isEquipped( hero )
+		if ((isEquipped( hero ) || hero.hasTalent(Talent.LIGHT_CLOAK))
 				&& !cursed
 				&& hero.buff(MagicImmune.class) == null
-				&& (charge > 0 || activeBuff != null)) {
+				&& (charge > 0 || activeBuff != null || SakuyaTimeStop.active(hero))) {
 			actions.add(AC_ACTIVATE);
 		}
 		return actions;
 	}
 
-	@Override
-	public void execute( Hero hero, String action ) {
+    @Override
+    public void execute(Hero hero, String action) {
+        super.execute(hero, action);
+        if (!action.equals(AC_ACTIVATE) || hero.buff(MagicImmune.class) != null) return;
+        if (!isEquipped(hero) && !hero.hasTalent(Talent.LIGHT_CLOAK)) {
+            GLog.i(Messages.get(Artifact.class, "need_to_equip")); return;
+        }
+        SakuyaTimeStop stopped = hero.buff(SakuyaTimeStop.class);
+        if (stopped != null) { stopped.requestEnd(); return; }
+        if (activeBuff != null) { activeBuff.detach(); activeBuff = null; return; }
+        if (charge <= 0) { GLog.i(Messages.get(this, "no_charge")); return; }
+        if (cursed) { GLog.i(Messages.get(this, "cursed")); return; }
+        for (Mob mob : Dungeon.level.mobs.toArray(new Mob[0])) {
+            if (Dungeon.level.heroFOV[mob.pos]) artifactProc(mob, visiblyUpgraded(), 1);
+        }
+        Invisibility.dispel(hero);
+        GLog.i(Messages.get(this, "onfreeze"));
+        GameScene.flash(0x80FFFFFF);
+        Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
+        Talent.onArtifactUsed(hero);
+        float turns = 2f * charge;
+        charge--;
+        SakuyaTimeStop.start(hero, turns, this);
+        updateQuickslot();
+    }
 
-		super.execute(hero, action);
+    public void consumeStoppedCharge() { charge = Math.max(0, charge-1); updateQuickslot(); }
 
-		if (hero.buff(MagicImmune.class) != null) return;
-
-		if (action.equals(AC_ACTIVATE)){
-
-			if (!isEquipped( hero ))        GLog.i( Messages.get(Artifact.class, "need_to_equip") );
-			else if (activeBuff != null) {
-				if (activeBuff instanceof timeStasis) { //do nothing
-				} else {
-					activeBuff.detach();
-					GLog.i( Messages.get(this, "deactivate") );
-				}
-			} else if (charge <= 0)         GLog.i( Messages.get(this, "no_charge") );
-			else if (cursed)                GLog.i( Messages.get(this, "cursed") );
-			else GameScene.show(
-						new WndOptions(new ItemSprite(this),
-								Messages.titleCase(name()),
-								Messages.get(this, "prompt"),
-								Messages.get(this, "stasis"),
-								Messages.get(this, "freeze")) {
-							@Override
-							protected void onSelect(int index) {
-								if (index == 0) {
-									GLog.i( Messages.get(TimekeepersHourglass.class, "onstasis") );
-									GameScene.flash(0x80FFFFFF);
-									Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
-
-									activeBuff = new timeStasis();
-									Talent.onArtifactUsed(Dungeon.hero);
-									activeBuff.attachTo(Dungeon.hero);
-								} else if (index == 1) {
-
-									//This might be really good...
-									for (Mob mob : Dungeon.level.mobs.toArray( new Mob[0] )) {
-										if (Dungeon.level.heroFOV[mob.pos]) {
-											artifactProc(mob, visiblyUpgraded(), 1);
-										}
-									}
-
-									GLog.i( Messages.get(TimekeepersHourglass.class, "onfreeze") );
-									GameScene.flash(0x80FFFFFF);
-									Sample.INSTANCE.play(Assets.Sounds.TELEPORT);
-
-									Invisibility.dispel(Dungeon.hero);
-									activeBuff = new timeFreeze();
-									Talent.onArtifactUsed(Dungeon.hero);
-									activeBuff.attachTo(Dungeon.hero);
-									charge--;
-									((timeFreeze)activeBuff).processTime(0f);
-								}
-							}
-						}
-				);
-		}
-	}
+    @Override public boolean collect(Bag container) {
+        if (!super.collect(container)) return false;
+        if (container.owner instanceof Hero && passiveBuff == null
+                && ((Hero)container.owner).hasTalent(Talent.LIGHT_CLOAK)) activate(container.owner);
+        return true;
+    }
+    @Override protected void onDetach() {
+        if (passiveBuff != null) { passiveBuff.detach(); passiveBuff = null; }
+        if (Dungeon.hero != null) {
+            SakuyaTimeStop stop = Dungeon.hero.buff(SakuyaTimeStop.class);
+            if (stop != null && stop.fromWatch()) stop.requestEnd();
+        }
+    }
 
 	@Override
 	public void activate(Char ch) {
@@ -163,6 +147,11 @@ public class TimekeepersHourglass extends Artifact {
 	@Override
 	public boolean doUnequip(Hero hero, boolean collect, boolean single) {
 		if (super.doUnequip(hero, collect, single)){
+            if (collect && hero.hasTalent(Talent.LIGHT_CLOAK)) activate(hero);
+            else {
+                SakuyaTimeStop stop = hero.buff(SakuyaTimeStop.class);
+                if (stop != null && stop.fromWatch()) stop.requestEnd();
+            }
 			if (activeBuff != null){
 				activeBuff.detach();
 				activeBuff = null;
@@ -179,6 +168,7 @@ public class TimekeepersHourglass extends Artifact {
 	
 	@Override
 	public void charge(Hero target, float amount) {
+        if (!isEquipped(target)) amount *= 0.25f*target.pointsInTalent(Talent.LIGHT_CLOAK);
 		if (charge < chargeCap && !cursed && target.buff(MagicImmune.class) == null){
 			partialCharge += 0.25f*amount;
 			while (partialCharge >= 1){
@@ -260,6 +250,7 @@ public class TimekeepersHourglass extends Artifact {
 				//90 turns to charge at full, 60 turns to charge at 0/10
 				float chargeGain = 1 / (90f - (chargeCap - charge)*3f);
 				chargeGain *= RingOfEnergy.artifactChargeMultiplier(target);
+                if (!isEquipped((Hero)target)) chargeGain *= 0.25f*((Hero)target).pointsInTalent(Talent.LIGHT_CLOAK);
 				partialCharge += chargeGain;
 
 				while (partialCharge >= 1) {
