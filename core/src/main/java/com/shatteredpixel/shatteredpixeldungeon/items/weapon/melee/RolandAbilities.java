@@ -300,22 +300,28 @@ public final class RolandAbilities {
     }
     public static boolean useFurioso(Hero hero,Integer cell) {
         if(!validFurioso(hero,cell))return false;
+        final float delay=hero.attackDelay();
         Runnable action=()->{
-            if(!validFurioso(hero,cell)){hero.next();return;}
+            if(!validFurioso(hero,cell))return;
             MeleeWeapon w=(MeleeWeapon)hero.belongings.weapon();
             hero.buff(FuriosoProgress.class).mask=0;
             MeleeWeapon.Charger charger=hero.buff(MeleeWeapon.Charger.class);
             if(charger!=null)charger.refreshActionIndicator();
             int rank=hero.pointsInTalent(com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent.COMBINED_LETHALITY);
             hero.belongings.abilityWeapon=w;
-            float delay=hero.attackDelay();
             try {strike(w,hero,Actor.findChar(cell),1.5f+0.5f*rank,false,Kind.FURIOSO);}
             finally {w.afterAbilityUsed(hero);}
-            Invisibility.dispel();hero.spendAndNext(delay);
+            Invisibility.dispel();
             com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator.refresh();MeleeWeapon.updateQuickslot();
         };
-        if(hero.sprite==null)action.run();
-        else {hero.busy();hero.sprite.attack(cell,action::run);}
+        Char enemy=Actor.findChar(cell);
+        if(hero.sprite==null || enemy.sprite==null){action.run();hero.spendAndNext(delay);}
+        else {
+            hero.busy();
+            com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene.show(
+                new com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso(hero,enemy,action,
+                    ()->hero.spendAndNext(delay),hero::next));
+        }
         return true;
     }
     /** Once per enemy, after a successful damaging attack reaches the health threshold. */

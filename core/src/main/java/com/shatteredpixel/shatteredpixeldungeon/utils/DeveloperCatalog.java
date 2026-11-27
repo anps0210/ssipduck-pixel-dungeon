@@ -4,6 +4,7 @@ package com.shatteredpixel.shatteredpixeldungeon.utils;
 public final class DeveloperCatalog {
     private DeveloperCatalog() {}
     public static final Class<?>[] ITEMS = {
+        com.shatteredpixel.shatteredpixeldungeon.items.FuriosoCharge.class,
         com.shatteredpixel.shatteredpixeldungeon.items.Amulet.class,
         com.shatteredpixel.shatteredpixeldungeon.items.Ankh.class,
         com.shatteredpixel.shatteredpixeldungeon.items.ArcaneResin.class,

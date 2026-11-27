@@ -20,8 +20,11 @@ public class RolandAbilitiesTest {
         previousApp=com.badlogic.gdx.Gdx.app;previousFiles=com.badlogic.gdx.Gdx.files;
         java.lang.reflect.Field preferences=com.watabou.utils.GameSettings.class.getDeclaredField("prefs");
         preferences.setAccessible(true);previousPreferences=preferences.get(null);
+        Map<String,Object> testSettings=new HashMap<>();
         com.watabou.utils.GameSettings.set((com.badlogic.gdx.Preferences)java.lang.reflect.Proxy.newProxyInstance(
             RolandAbilitiesTest.class.getClassLoader(),new Class[]{com.badlogic.gdx.Preferences.class},(proxy,method,args)->{
+                if(method.getName().equals("putBoolean")){testSettings.put((String)args[0],args[1]);return proxy;}
+                if(method.getName().equals("getBoolean"))return testSettings.getOrDefault(args[0],args.length>1?args[1]:false);
                 if(method.getName().equals("getString"))return "en";
                 if(method.getName().equals("contains"))return true;
                 if(method.getReturnType()==boolean.class)return false;
@@ -346,5 +349,19 @@ public class RolandAbilitiesTest {
         Mob m=enemy(66);assertTrue(RolandAbilities.useFurioso(hero,m.pos));
         assertNull(com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator.action);
         charger.fx(true);assertNull(com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator.action);
+    }
+
+    @Test public void developerChargeFillsNineFamiliesWithoutChangingTalentsOrSpendingTurns(){
+        fixer();talent(Talent.COMBINED_LETHALITY,1);
+        com.shatteredpixel.shatteredpixeldungeon.items.FuriosoCharge item=new com.shatteredpixel.shatteredpixeldungeon.items.FuriosoCharge();
+        item.quantity(2);assertTrue(item.collect(hero.belongings.backpack));
+        SPDSettings.developerMode(false);assertFalse(item.charge(hero));assertEquals(2,item.quantity());
+        SPDSettings.developerMode(true);
+        try {
+            assertTrue(item.charge(hero));assertEquals(9,RolandAbilities.furiosoCount(hero));
+            assertEquals(1,item.quantity());assertEquals(0,hero.spent,0);
+            assertEquals(1,hero.pointsInTalent(Talent.COMBINED_LETHALITY));
+            talent(Talent.COMBINED_LETHALITY,0);assertFalse(item.charge(hero));assertEquals(1,item.quantity());
+        } finally {SPDSettings.developerMode(false);}
     }
 }

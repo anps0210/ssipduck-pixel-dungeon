@@ -28,4 +28,28 @@ public class DeveloperModeTest {
             SPDSettings.developerMode(false); assertFalse(SPDSettings.developerMode());
         } finally { GameSettings.set(null); Dungeon.hero=null; }
     }
+
+    @Test public void floorSelectionRejectsInvalidFloors(){
+        assertEquals(1,com.shatteredpixel.shatteredpixeldungeon.windows.WndDeveloper.parseFloor("1"));
+        assertEquals(26,com.shatteredpixel.shatteredpixeldungeon.windows.WndDeveloper.parseFloor(" 26 "));
+        for(String invalid:new String[]{"0","27","-1","abc","1.5",""}){
+            try {com.shatteredpixel.shatteredpixeldungeon.windows.WndDeveloper.parseFloor(invalid);fail(invalid);}
+            catch(IllegalArgumentException expected){}
+        }
+    }
+    @Test public void developerCatalogIncludesBothTestingItems(){
+        java.util.List<Class<?>> catalog=java.util.Arrays.asList(com.shatteredpixel.shatteredpixeldungeon.utils.DeveloperCatalog.ITEMS);
+        assertTrue(catalog.contains(com.shatteredpixel.shatteredpixeldungeon.items.TengusMask.class));
+        assertTrue(catalog.contains(com.shatteredpixel.shatteredpixeldungeon.items.FuriosoCharge.class));
+    }
+    @Test public void furiosoMotionCrossesTargetAndFinishesBeforeReturn(){
+        float low=0,high=0;
+        for(float t=0;t<2.5f;t+=.01f){
+            float x=com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.attackOffset(t);
+            assertTrue(Float.isFinite(x));low=Math.min(low,x);high=Math.max(high,x);
+        }
+        assertTrue(low<-.8f);assertTrue(high>.4f);
+        assertTrue(com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.IMPACT
+            <com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.DURATION);
+    }
 }

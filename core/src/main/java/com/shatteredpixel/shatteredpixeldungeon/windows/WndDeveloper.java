@@ -26,7 +26,7 @@ public class WndDeveloper extends WndOptions {
         return SPDSettings.developerMode() && Dungeon.hero != null && Dungeon.hero.isAlive() && Dungeon.level != null;
     }
     public WndDeveloper() {
-        super(msg("title"), msg("body"), msg("items"), msg("mobs"), msg("kit"), msg("energy"));
+        super(msg("title"), msg("body"), msg("items"), msg("mobs"), msg("kit"), msg("energy"), msg("floor"), msg("mask"), msg("furioso"));
     }
     @Override protected void onSelect(int index) {
         if (!allowed()) return;
@@ -38,7 +38,31 @@ public class WndDeveloper extends WndOptions {
             ChaliceOfBlood chalice = new ChaliceOfBlood(); chalice.upgrade(10); give(chalice);
             Dungeon.energy += 50;
             GLog.p(msg("kit_done"));
-        } else { Dungeon.energy += 50; GLog.p(msg("energy_done")); }
+        } else if(index==3) { Dungeon.energy += 50; GLog.p(msg("energy_done")); }
+        else if(index==4) chooseFloor();
+        else if(index==5) give(new com.shatteredpixel.shatteredpixeldungeon.items.TengusMask());
+        else if(index==6) give(new com.shatteredpixel.shatteredpixeldungeon.items.FuriosoCharge());
+    }
+    public static int parseFloor(String value) {
+        int depth=Integer.parseInt(value.trim());
+        if(depth<1 || depth>26)throw new IllegalArgumentException();
+        return depth;
+    }
+    private static void chooseFloor() {
+        GameScene.show(new WndTextInput(msg("floor"),msg("floor_hint"),Integer.toString(Dungeon.depth),2,false,msg("go"),msg("cancel")) {
+            @Override public void onSelect(boolean positive,String text) {
+                if(!positive || !allowed())return;
+                final int depth;
+                try {depth=parseFloor(text);} catch(IllegalArgumentException e){GLog.w(msg("floor_invalid"));return;}
+                if(depth==Dungeon.depth && Dungeon.branch==0)return;
+                Dungeon.hero.curAction=null;Dungeon.hero.resting=false;
+                com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene.returnDepth=depth;
+                com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene.returnBranch=0;
+                com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene.returnPos=-1;
+                com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene.mode=com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene.Mode.RETURN;
+                com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon.switchScene(com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene.class);
+            }
+        });
     }
     private static void search(final boolean items) {
         GameScene.show(new WndTextInput(msg(items ? "items" : "mobs"), msg("search_hint"), "", 40, false, msg("search"), msg("cancel")) {
