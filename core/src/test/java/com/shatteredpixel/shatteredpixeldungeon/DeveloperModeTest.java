@@ -65,9 +65,16 @@ public class DeveloperModeTest {
         assertTrue(motion(2.05f,0)<motion(2.05f,2));
         assertEquals(motion(2.19f,0),motion(2.54f,0),0);
     }
-    @Test public void revisedFuriosoHasDiagonalCrossingsShotgunChaseAndFinalPause(){
-        assertTrue(motion(3f,1)<0);assertTrue(motion(3.08f,1)>0);
-        assertTrue(motion(3.13f,1)<0);assertTrue(motion(3.21f,1)>0);
+    @Test public void revisedFuriosoHasSingleHorizontalCrossingShotgunChaseAndFinalPause(){
+        float previous=motion(3f,0);
+        assertTrue(previous<motion(3f,2));
+        for(float t=3f;t<=3.44f;t+=.005f){
+            assertEquals(0,motion(t,1),0);
+            assertTrue(motion(t,0)>=previous-.0001f);
+            previous=motion(t,0);
+        }
+        assertTrue(motion(3.08f,0)>motion(3.08f,2));
+        assertEquals(motion(3.08f,0),motion(3.44f,0),0);
         float shotgun=Math.abs(motion(3.53f,2)-motion(3.44f,2));
         assertTrue(shotgun>3*Math.abs(motion(.21f,2)-motion(0,2)));
         assertEquals(motion(3.44f,0),motion(3.73f,0),0);
@@ -76,5 +83,20 @@ public class DeveloperModeTest {
         assertEquals(motion(4.39f,0),motion(5.04f,0),0);
         assertEquals(motion(4.39f,1),motion(5.04f,1),0);
         assertTrue(motion(5.38f,1)<0);assertTrue(motion(5.6f,1)>0);
+    }
+
+    @Test public void meleeSpacingAdaptsToLargeEnemiesAndKeepsApproachMovement(){
+        for(float time:new float[]{.73f,1.19f,1.50f,1.59f,1.82f,2.05f,2.70f,3.08f,3.90f,4.23f,5.6f}){
+            float normal=com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.motion(time,0,.55f);
+            float large=com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.motion(time,0,.85f);
+            float target=motion(time,2);
+            assertTrue(Math.abs(normal-target)>=.55f-.0001f);
+            assertTrue(Math.abs(large-target)>=.85f-.0001f);
+            assertTrue(Math.abs(large-target)>Math.abs(normal-target));
+        }
+        assertTrue(motion(1.19f,0)<motion(1.02f,0));
+        // Crossing remains continuous and passes through the target, without snapping sides.
+        float left=motion(3f,0),right=motion(3.08f,0);
+        assertEquals((left+right)/2,motion(3.04f,0),.0001f);
     }
 }

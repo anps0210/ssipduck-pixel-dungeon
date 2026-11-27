@@ -38,10 +38,9 @@ public class WndFurioso extends Window {
         // 7. Lift and drop: body motion only, no weapon/effect.
         {2.70f,.13f,-.24f,.49f,0}, {2.79f,.13f,.05f,.49f,.04f},
         {2.94f,.13f,0,.49f,0},
-        // 8. Two diagonal crossings form an X, then a near-instant cross-over.
-        {3.00f,.08f,-.20f,.49f,0}, {3.08f,.88f,.16f,.49f,0},
-        {3.13f,.88f,-.20f,.49f,0}, {3.21f,.08f,.16f,.49f,0},
-        {3.26f,.90f,0,.49f,0}, {3.44f,.90f,0,.49f,0},
+        // 8. One horizontal flash-through, then hold on the opposite side.
+        {3.00f,.13f,0,.49f,0}, {3.08f,.90f,0,.49f,0},
+        {3.44f,.90f,0,.49f,0},
         // 9. Shotgun: large knockback away from Roland, who stands on the right.
         {3.53f,.90f,0,-.18f,0}, {3.73f,.90f,0,-.18f,0},
         // 10. Chase and strike down.
@@ -54,15 +53,25 @@ public class WndFurioso extends Window {
         {STRIKES,-.40f,.06f,-.18f,.04f}
     };
     /** component: 0=Roland x, 1=Roland y, 2=target x, 3=target y. */
-    public static float motion(float time,int component){
+    public static float motion(float time,int component){return motion(time,component,.55f);}
+    public static float motion(float time,int component,float minimumGap){
         if(component<0 || component>3)throw new IllegalArgumentException();
         int column=component+1;
-        if(time<=0)return MOTION[0][column];
+        if(time<=0)return keyframe(0,column,minimumGap);
         for(int i=1;i<MOTION.length;i++)if(time<=MOTION[i][0]){
             float p=smooth((time-MOTION[i-1][0])/(MOTION[i][0]-MOTION[i-1][0]));
-            return MOTION[i-1][column]+(MOTION[i][column]-MOTION[i-1][column])*p;
+            return keyframe(i-1,column,minimumGap)+(keyframe(i,column,minimumGap)-keyframe(i-1,column,minimumGap))*p;
         }
-        return MOTION[MOTION.length-1][column];
+        return keyframe(MOTION.length-1,column,minimumGap);
+    }
+    private static float keyframe(int index,int column,float minimumGap){
+        float[] frame=MOTION[index];
+        if(column!=1 || frame[0]<.73f)return frame[column];
+        // Use a stable anchor so target recoil doesn't drag Roland along with it.
+        float anchor=frame[0]<=3.73f?.49f:-.18f;
+        float delta=frame[1]-anchor;
+        float distance=minimumGap+Math.max(0,Math.abs(delta)-.20f)*.4f;
+        return anchor+Math.copySign(distance,delta);
     }
     public static float attackOffset(float time){return motion(time,0);}
     private static float smooth(float x){return x*x*(3-2*x);}
@@ -91,7 +100,8 @@ public class WndFurioso extends Window {
         targetStageScale=Math.min(stageScale,Math.min(width*.28f/target.width,height*.3f/target.height));
         playerVisible=hero.sprite.visible;targetVisible=enemy.sprite.visible;
         hero.sprite.visible=false;enemy.sprite.visible=false;
-        add(player);add(target);
+        // Draw Roland last, including when passing through a large enemy.
+        add(target);add(player);
         pose(0);
     }
     private PointF screenPosition(Image image){
@@ -109,7 +119,10 @@ public class WndFurioso extends Window {
         float floor=height*.57f;
         float phase=Math.max(0,Math.min(STRIKES,time-ENTER));
         float span=width*.28f;
-        float playerCenter=width*.5f+motion(phase,0)*span;
+        // Keep a visible gap between sprite edges at attack endpoints.
+        // Interpolate widened keyframes, rather than clamping mid-dash positions.
+        float minimumGap=Math.max(.55f,(player.width*stageScale/2+target.width*targetStageScale/2+6f)/span);
+        float playerCenter=width*.5f+motion(phase,0,minimumGap)*span;
         float targetCenter=width*.5f+motion(phase,2)*span;
         float tx=targetCenter-target.width*targetStageScale/2;
         float ty=floor-target.height*targetStageScale+motion(phase,3)*span;
