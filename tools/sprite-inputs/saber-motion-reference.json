@@ -1,0 +1,589 @@
+{
+  "regions": {
+    "head": [
+      0,
+      0,
+      12,
+      7
+    ],
+    "torso": [
+      3,
+      7,
+      9,
+      10
+    ],
+    "left_arm": [
+      0,
+      7,
+      3,
+      12
+    ],
+    "right_arm": [
+      9,
+      7,
+      12,
+      12
+    ],
+    "skirt": [
+      3,
+      10,
+      9,
+      12
+    ],
+    "left_foot": [
+      0,
+      12,
+      6,
+      15
+    ],
+    "right_foot": [
+      6,
+      12,
+      12,
+      15
+    ]
+  },
+  "frames": [
+    {
+      "pose": "original",
+      "clipped_pixels": 0
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "arms": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "arms": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 1,
+      "measured_head_offset": [
+        0,
+        1
+      ],
+      "feet": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          1
+        ],
+        [
+          -1,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 1,
+      "measured_head_offset": [
+        0,
+        1
+      ],
+      "feet": [
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "arms": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "pose": "reference grave silhouette / original armor palette",
+      "clipped_pixels": 0
+    },
+    {
+      "pose": "reference grave silhouette / original armor palette",
+      "clipped_pixels": 0
+    },
+    {
+      "pose": "reference grave silhouette / original armor palette",
+      "clipped_pixels": 0
+    },
+    {
+      "pose": "reference grave silhouette / original armor palette",
+      "clipped_pixels": 0
+    },
+    {
+      "pose": "reference grave silhouette / original armor palette",
+      "clipped_pixels": 0
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          -2,
+          -2
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          2,
+          -1
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          1,
+          -1
+        ],
+        [
+          -1,
+          -1
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          1,
+          0
+        ],
+        [
+          -1,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "arms": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          0,
+          0
+        ],
+        [
+          -1,
+          -1
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    },
+    {
+      "head_bob": 0,
+      "measured_head_offset": [
+        0,
+        0
+      ],
+      "feet": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "arms": [
+        [
+          0,
+          0
+        ],
+        [
+          -2,
+          -2
+        ]
+      ],
+      "clipped_pixels": 0,
+      "note": "Reference-guided constrained pose, not exact motion capture"
+    }
+  ],
+  "sequences": {
+    "idle": [
+      [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      1000
+    ],
+    "walk": [
+      [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      50
+    ],
+    "attack": [
+      [
+        13,
+        14,
+        15,
+        0
+      ],
+      70
+    ],
+    "death": [
+      [
+        8,
+        9,
+        10,
+        11,
+        12,
+        11
+      ],
+      50
+    ],
+    "operate": [
+      [
+        16,
+        17,
+        16,
+        17
+      ],
+      130
+    ],
+    "fly": [
+      [
+        18
+      ],
+      1000
+    ],
+    "read": [
+      [
+        19,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        19
+      ],
+      50
+    ]
+  },
+  "notes": [
+    "Constrained pose rig: head motion is measured; limb arcs are reference-guided approximations.",
+    "Death uses the supplied grave silhouette with source armor colors.",
+    "GIFs repeat for inspection, including one-shot game animations.",
+    "All seven armor rows share one outfit."
+  ]
+}

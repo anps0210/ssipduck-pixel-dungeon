@@ -27,6 +27,7 @@ import com.watabou.noosa.TextureFilm;
 public class ItemSpriteSheet {
 
 	public static final int SIZE = 16;
+    public static final int SILENCE_GLOVES = 9000;
 
 	private static final int TX_WIDTH = 256;
 	private static final int TX_HEIGHT = 512;

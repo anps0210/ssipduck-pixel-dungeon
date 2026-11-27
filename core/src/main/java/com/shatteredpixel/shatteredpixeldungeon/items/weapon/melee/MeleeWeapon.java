@@ -74,9 +74,8 @@ public class MeleeWeapon extends Weapon {
 
 	@Override
 	public String defaultAction() {
-		if (Dungeon.hero != null && (Dungeon.hero.heroClass == HeroClass.DUELIST
-			|| Dungeon.hero.hasTalent(Talent.SWIFT_EQUIP))){
-			return AC_ABILITY;
+		if (Dungeon.hero != null && Dungeon.hero.heroClass == HeroClass.DUELIST){
+			return RolandAbilities.kind(this) == RolandAbilities.Kind.NONE ? super.defaultAction() : AC_ABILITY;
 		} else {
 			return super.defaultAction();
 		}
@@ -85,7 +84,7 @@ public class MeleeWeapon extends Weapon {
 	@Override
 	public ArrayList<String> actions(Hero hero) {
 		ArrayList<String> actions = super.actions(hero);
-		if (isEquipped(hero) && hero.heroClass == HeroClass.DUELIST){
+		if (isEquipped(hero) && hero.heroClass == HeroClass.DUELIST && RolandAbilities.kind(this) != RolandAbilities.Kind.NONE){
 			actions.add(AC_ABILITY);
 		}
 		return actions;
@@ -94,7 +93,7 @@ public class MeleeWeapon extends Weapon {
 	@Override
 	public String actionName(String action, Hero hero) {
 		if (action.equals(AC_ABILITY)){
-			return Messages.upperCase(Messages.get(this, "ability_name"));
+			return RolandAbilities.name(this);
 		} else {
 			return super.actionName(action, hero);
 		}
@@ -105,19 +104,15 @@ public class MeleeWeapon extends Weapon {
 		super.execute(hero, action);
 
 		if (action.equals(AC_ABILITY)){
+            if (RolandAbilities.kind(this) == RolandAbilities.Kind.NONE) return;
 			usesTargeting = false;
 			if (!isEquipped(hero)) {
-				if (hero.hasTalent(Talent.SWIFT_EQUIP)){
-					if (hero.buff(Talent.SwiftEquipCooldown.class) == null
-						|| hero.buff(Talent.SwiftEquipCooldown.class).hasSecondUse()){
-						execute(hero, AC_EQUIP);
-					} else if (hero.heroClass == HeroClass.DUELIST) {
-						GLog.w(Messages.get(this, "ability_need_equip"));
-					}
-				} else if (hero.heroClass == HeroClass.DUELIST) {
-					GLog.w(Messages.get(this, "ability_need_equip"));
-				}
-			} else if (hero.heroClass != HeroClass.DUELIST){
+				if (com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.freeEquip(hero,this)) {
+                    if (doEquip(hero)) execute(hero, AC_ABILITY);
+                } else if (hero.heroClass == HeroClass.DUELIST) {
+                    GLog.w(Messages.get(this,"ability_need_equip"));
+                }
+            } else if (hero.heroClass != HeroClass.DUELIST){
 				//do nothing
 			} else if (STRReq() > hero.STR()){
 				GLog.w(Messages.get(this, "ability_low_str"));
@@ -151,7 +146,7 @@ public class MeleeWeapon extends Weapon {
 
 	//leave null for no targeting
 	public String targetingPrompt(){
-		return null;
+        return RolandAbilities.kind(this) == RolandAbilities.Kind.WHEELS_DEF ? null : Messages.get(RolandAbilities.class, "prompt");
 	}
 
 	public boolean useTargeting(){
@@ -164,7 +159,7 @@ public class MeleeWeapon extends Weapon {
 	}
 
 	protected void duelistAbility( Hero hero, Integer target ){
-		//do nothing by default
+		RolandAbilities.use(this, hero, target);
 	}
 
 	protected void beforeAbilityUsed(Hero hero, Char target){
@@ -204,15 +199,7 @@ public class MeleeWeapon extends Weapon {
 				ScrollOfRecharging.charge(hero);
 			}
 		}
-		if (hero.hasTalent(Talent.COMBINED_LETHALITY)) {
-			Talent.CombinedLethalityAbilityTracker tracker = hero.buff(Talent.CombinedLethalityAbilityTracker.class);
-			if (tracker == null || tracker.weapon == this || tracker.weapon == null){
-				Buff.affect(hero, Talent.CombinedLethalityAbilityTracker.class, hero.cooldown()).weapon = this;
-			} else {
-				//we triggered the talent, so remove the tracker
-				tracker.detach();
-			}
-		}
+
 		if (hero.hasTalent(Talent.COMBINED_ENERGY)){
 			Talent.CombinedEnergyAbilityTracker tracker = hero.buff(Talent.CombinedEnergyAbilityTracker.class);
 			if (tracker == null || !tracker.monkAbilused){
@@ -241,8 +228,22 @@ public class MeleeWeapon extends Weapon {
 	}
 
 	public final float abilityChargeUse(Hero hero, Char target){
-		return baseChargeUse(hero, target);
+		return RolandAbilities.cost(this, hero);
 	}
+
+    private String rolandId;
+    public String rolandId() {
+        if (rolandId == null) rolandId = java.util.UUID.randomUUID().toString();
+        return rolandId;
+    }
+    @Override public void storeInBundle(Bundle bundle) {
+        super.storeInBundle(bundle);
+        if (rolandId != null) bundle.put("roland_id", rolandId);
+    }
+    @Override public void restoreFromBundle(Bundle bundle) {
+        super.restoreFromBundle(bundle);
+        rolandId = bundle.contains("roland_id") ? bundle.getString("roland_id") : null;
+    }
 
 	public int tier;
 
@@ -266,29 +267,10 @@ public class MeleeWeapon extends Weapon {
 		return req;
 	}
 
-	private static boolean evaluatingTwinUpgrades = false;
-	@Override
-	public int buffedLvl() {
-		if (!evaluatingTwinUpgrades && Dungeon.hero != null && isEquipped(Dungeon.hero) && Dungeon.hero.hasTalent(Talent.TWIN_UPGRADES)){
-			KindOfWeapon other = null;
-			if (Dungeon.hero.belongings.weapon() != this) other = Dungeon.hero.belongings.weapon();
-			if (Dungeon.hero.belongings.secondWep() != this) other = Dungeon.hero.belongings.secondWep();
-
-			if (other instanceof MeleeWeapon) {
-				evaluatingTwinUpgrades = true;
-				int otherLevel = other.buffedLvl();
-				evaluatingTwinUpgrades = false;
-
-				//weaker weapon needs to be 2/1/0 tiers lower, based on talent level
-				if ((tier + (3 - Dungeon.hero.pointsInTalent(Talent.TWIN_UPGRADES))) <= ((MeleeWeapon) other).tier
-						&& otherLevel > super.buffedLvl()) {
-					return otherLevel;
-				}
-
-			}
-		}
-		return super.buffedLvl();
-	}
+    public int actualBuffedLevel() { return super.buffedLvl(); }
+    @Override public int buffedLvl() {
+        return com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.resonantLevel(Dungeon.hero,this,super.buffedLvl());
+    }
 
 	@Override
 	public int damageRoll(Char owner) {
@@ -302,7 +284,7 @@ public class MeleeWeapon extends Weapon {
 		}
 		return damage;
 	}
-	
+
 	@Override
 	public String info() {
 
@@ -362,19 +344,19 @@ public class MeleeWeapon extends Weapon {
 		}
 
 		//the mage's staff has no ability as it can only be gained by the mage
-		if (Dungeon.hero != null && Dungeon.hero.heroClass == HeroClass.DUELIST && !(this instanceof MagesStaff)){
+		if (Dungeon.hero != null && Dungeon.hero.heroClass == HeroClass.DUELIST && RolandAbilities.kind(this) != RolandAbilities.Kind.NONE){
 			info += "\n\n" + abilityInfo();
 		}
-		
+
 		return info;
 	}
-	
+
 	public String statsInfo(){
 		return Messages.get(this, "stats_desc");
 	}
 
 	public String abilityInfo() {
-		return Messages.get(this, "ability_desc");
+		return RolandAbilities.info(this);
 	}
 
 	public String upgradeAbilityStat(int level){
@@ -431,9 +413,7 @@ public class MeleeWeapon extends Weapon {
 					float chargeToGain = 1/(60f-1.5f*(chargeCap()-charges));
 
 					//40 to 30 turns per charge for champion
-					if (Dungeon.hero.subClass == HeroSubClass.CHAMPION){
-						chargeToGain *= 1.5f;
-					}
+
 
 					//50% slower charge gain with brawler's stance enabled, even if buff is inactive
 					if (Dungeon.hero.buff(RingOfForce.BrawlersStance.class) != null){
@@ -479,14 +459,7 @@ public class MeleeWeapon extends Weapon {
 			ActionIndicator.clearAction(this);
 		}
 
-		public int chargeCap(){
-			//caps at level 19 with 8 or 10 charges
-			if (Dungeon.hero.subClass == HeroSubClass.CHAMPION){
-				return Math.min(10, 4 + (Dungeon.hero.lvl - 1) / 3);
-			} else {
-				return Math.min(8, 2 + (Dungeon.hero.lvl - 1) / 3);
-			}
-		}
+		public int chargeCap(){ return Math.min(8, 2 + (Dungeon.hero.lvl - 1) / 3); }
 
 		public void gainCharge( float charge ){
 			if (charges < chargeCap()) {
@@ -522,7 +495,7 @@ public class MeleeWeapon extends Weapon {
 
 		@Override
 		public String actionName() {
-			return Messages.get(MeleeWeapon.class, "swap");
+			return RolandAbilities.furiosoReady(Dungeon.hero) ? "Furioso" : Messages.get(com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.class,"name");
 		}
 
 		@Override
@@ -532,28 +505,11 @@ public class MeleeWeapon extends Weapon {
 
 		@Override
 		public Visual primaryVisual() {
-			Image ico;
-			if (Dungeon.hero.belongings.weapon == null){
-				ico = new HeroIcon(this);
- 			} else {
-				ico = new ItemSprite(Dungeon.hero.belongings.weapon);
-			}
-			ico.width += 4; //shift slightly to the left to separate from smaller icon
-			return ico;
-		}
+            return new ItemSprite(com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet.SILENCE_GLOVES);
+        }
 
 		@Override
-		public Visual secondaryVisual() {
-			Image ico;
-			if (Dungeon.hero.belongings.secondWep == null){
-				ico = new HeroIcon(this);
-			} else {
-				ico = new ItemSprite(Dungeon.hero.belongings.secondWep);
-			}
-			ico.scale.set(PixelScene.align(0.51f));
-			ico.brightness(0.6f);
-			return ico;
-		}
+		public Visual secondaryVisual() { return null; }
 
 		@Override
 		public int indicatorColor() {
@@ -562,26 +518,12 @@ public class MeleeWeapon extends Weapon {
 
 		@Override
 		public void doAction() {
-			if (Dungeon.hero.subClass != HeroSubClass.CHAMPION){
-				return;
-			}
-
-			if (Dungeon.hero.belongings.secondWep == null && Dungeon.hero.belongings.backpack.items.size() >= Dungeon.hero.belongings.backpack.capacity()){
-				GLog.w(Messages.get(MeleeWeapon.class, "swap_full"));
-				return;
-			}
-
-			KindOfWeapon temp = Dungeon.hero.belongings.weapon;
-			Dungeon.hero.belongings.weapon = Dungeon.hero.belongings.secondWep;
-			Dungeon.hero.belongings.secondWep = temp;
-
-			Dungeon.hero.sprite.operate(Dungeon.hero.pos);
-			Sample.INSTANCE.play(Assets.Sounds.UNLOCK);
-
-			ActionIndicator.setAction(this);
-			Item.updateQuickslot();
-			AttackIndicator.updateState();
-		}
+            if (RolandAbilities.furiosoReady(Dungeon.hero)) RolandAbilities.promptFurioso(Dungeon.hero);
+            else {
+                com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves bag = com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.find(Dungeon.hero);
+                if (bag != null) bag.execute(Dungeon.hero, com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag.AC_OPEN);
+            }
+        }
 	}
 
 }

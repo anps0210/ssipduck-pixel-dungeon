@@ -274,6 +274,7 @@ public class Assets {
 		public static final String ROGUE    = "sprites/rogue.png";
 		public static final String HUNTRESS = "sprites/huntress.png";
 		public static final String DUELIST  = "sprites/duelist.png";
+        public static final String SILENCE_GLOVES = "sprites/silence-gloves.png";
 		public static final String CLERIC   = "sprites/cleric.png";
 		public static final String AVATARS  = "sprites/avatars.png";
 		public static final String PET      = "sprites/pet.png";

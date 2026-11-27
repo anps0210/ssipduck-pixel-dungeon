@@ -45,73 +45,21 @@ abstract public class KindOfWeapon extends EquipableItem {
 
 	protected String hitSound = Assets.Sounds.HIT;
 	protected float hitSoundPitch = 1f;
-	
-	@Override
-	public void execute(Hero hero, String action) {
-		if (hero.subClass == HeroSubClass.CHAMPION && action.equals(AC_EQUIP)){
-			usesTargeting = false;
-			String primaryName = Messages.titleCase(hero.belongings.weapon != null ? hero.belongings.weapon.trueName() : Messages.get(KindOfWeapon.class, "empty"));
-			String secondaryName = Messages.titleCase(hero.belongings.secondWep != null ? hero.belongings.secondWep.trueName() : Messages.get(KindOfWeapon.class, "empty"));
-			if (primaryName.length() > 18) primaryName = primaryName.substring(0, 15) + "...";
-			if (secondaryName.length() > 18) secondaryName = secondaryName.substring(0, 15) + "...";
-			GameScene.show(new WndOptions(
-					new ItemSprite(this),
-					Messages.titleCase(name()),
-					Messages.get(KindOfWeapon.class, "which_equip_msg"),
-					Messages.get(KindOfWeapon.class, "which_equip_primary", primaryName),
-					Messages.get(KindOfWeapon.class, "which_equip_secondary", secondaryName)
-			){
-				@Override
-				protected void onSelect(int index) {
-					super.onSelect(index);
-					if (index == 0 || index == 1){
-						//In addition to equipping itself, item reassigns itself to the quickslot
-						//This is a special case as the item is being removed from inventory, but is staying with the hero.
-						int slot = Dungeon.quickslot.getSlot( KindOfWeapon.this );
-						slotOfUnequipped = -1;
-						if (index == 0) {
-							doEquip(hero);
-						} else {
-							equipSecondary(hero);
-						}
-						if (slot != -1) {
-							Dungeon.quickslot.setSlot( slot, KindOfWeapon.this );
-							updateQuickslot();
-						//if this item wasn't quickslotted, but the item it is replacing as equipped was
-						//then also have the item occupy the unequipped item's quickslot
-						} else if (slotOfUnequipped != -1 && defaultAction() != null) {
-							Dungeon.quickslot.setSlot( slotOfUnequipped, KindOfWeapon.this );
-							updateQuickslot();
-						}
-					}
-				}
-			});
-		} else {
-			super.execute(hero, action);
-		}
-	}
 
 	@Override
 	public boolean isEquipped( Hero hero ) {
 		return hero != null && (hero.belongings.weapon() == this || hero.belongings.secondWep() == this);
 	}
 
-	private static boolean isSwiftEquipping = false;
 
 	protected float timeToEquip( Hero hero ) {
-		return isSwiftEquipping ? 0f : super.timeToEquip(hero);
+		return com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.freeEquip(hero,this) ? 0f : super.timeToEquip(hero);
 	}
-	
+
 	@Override
 	public boolean doEquip( Hero hero ) {
 
-		isSwiftEquipping = false;
-		if (hero.belongings.contains(this) && hero.hasTalent(Talent.SWIFT_EQUIP)){
-			if (hero.buff(Talent.SwiftEquipCooldown.class) == null
-					|| hero.buff(Talent.SwiftEquipCooldown.class).hasSecondUse()){
-				isSwiftEquipping = true;
-			}
-		}
+
 
 		// 15/25% chance
 		if (hero.heroClass != HeroClass.CLERIC && hero.hasTalent(Talent.HOLY_INTUITION)
@@ -123,9 +71,9 @@ abstract public class KindOfWeapon extends EquipableItem {
 		}
 
 		detachAll( hero.belongings.backpack );
-		
+
 		if (hero.belongings.weapon == null || hero.belongings.weapon.doUnequip( hero, true )) {
-			
+
 			hero.belongings.weapon = this;
 			activate( hero );
 			Talent.onItemEquipped(hero, this);
@@ -138,21 +86,11 @@ abstract public class KindOfWeapon extends EquipableItem {
 				GLog.n( Messages.get(KindOfWeapon.class, "equip_cursed") );
 			}
 
-			hero.spendAndNext( timeToEquip(hero) );
-			if (isSwiftEquipping) {
-				GLog.i(Messages.get(this, "swift_equip"));
-				if (hero.buff(Talent.SwiftEquipCooldown.class) == null){
-					Buff.affect(hero, Talent.SwiftEquipCooldown.class, 19f)
-							.secondUse = hero.pointsInTalent(Talent.SWIFT_EQUIP) == 2;
-				} else if (hero.buff(Talent.SwiftEquipCooldown.class).hasSecondUse()) {
-					hero.buff(Talent.SwiftEquipCooldown.class).secondUse = false;
-				}
-				isSwiftEquipping = false;
-			}
+			if (timeToEquip(hero) > 0) hero.spendAndNext( timeToEquip(hero) );
+
 			return true;
-			
+
 		} else {
-			isSwiftEquipping = false;
 			collect( hero.belongings.backpack );
 			return false;
 		}
@@ -160,13 +98,7 @@ abstract public class KindOfWeapon extends EquipableItem {
 
 	public boolean equipSecondary( Hero hero ){
 
-		isSwiftEquipping = false;
-		if (hero.belongings.contains(this) && hero.hasTalent(Talent.SWIFT_EQUIP)){
-			if (hero.buff(Talent.SwiftEquipCooldown.class) == null
-					|| hero.buff(Talent.SwiftEquipCooldown.class).hasSecondUse()){
-				isSwiftEquipping = true;
-			}
-		}
+
 
 		boolean wasInInv = hero.belongings.contains(this);
 		detachAll( hero.belongings.backpack );
@@ -185,21 +117,11 @@ abstract public class KindOfWeapon extends EquipableItem {
 				GLog.n( Messages.get(KindOfWeapon.class, "equip_cursed") );
 			}
 
-			hero.spendAndNext( timeToEquip(hero) );
-			if (isSwiftEquipping) {
-				GLog.i(Messages.get(this, "swift_equip"));
-				if (hero.buff(Talent.SwiftEquipCooldown.class) == null){
-					Buff.affect(hero, Talent.SwiftEquipCooldown.class, 19f)
-							.secondUse = hero.pointsInTalent(Talent.SWIFT_EQUIP) == 2;
-				} else if (hero.buff(Talent.SwiftEquipCooldown.class).hasSecondUse()) {
-					hero.buff(Talent.SwiftEquipCooldown.class).secondUse = false;
-				}
-				isSwiftEquipping = false;
-			}
+			if (timeToEquip(hero) > 0) hero.spendAndNext( timeToEquip(hero) );
+
 			return true;
 
 		} else {
-			isSwiftEquipping = false;
 			collect( hero.belongings.backpack );
 			return false;
 		}
@@ -207,6 +129,11 @@ abstract public class KindOfWeapon extends EquipableItem {
 
 	@Override
 	public boolean doUnequip( Hero hero, boolean collect, boolean single ) {
+        com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves bag = com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.find(hero);
+        if (collect && com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.enabled(hero) && !bag.canHold(this)) {
+            GLog.w(Messages.get(bag,"full")); return false;
+        }
+
 		boolean second = hero.belongings.secondWep == this;
 
 		if (second){
@@ -214,7 +141,7 @@ abstract public class KindOfWeapon extends EquipableItem {
 			hero.belongings.secondWep = null;
 		}
 
-		if (super.doUnequip( hero, collect, single )) {
+		if (super.doUnequip( hero, collect, single && !com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.freeEquip(hero,this) )) {
 
 			if (!second){
 				hero.belongings.weapon = null;
@@ -249,11 +176,11 @@ abstract public class KindOfWeapon extends EquipableItem {
 			return Random.NormalIntRange(min(), max());
 		}
 	}
-	
+
 	public float accuracyFactor( Char owner, Char target ) {
 		return 1f;
 	}
-	
+
 	public float delayFactor( Char owner ) {
 		return 1f;
 	}
@@ -261,7 +188,7 @@ abstract public class KindOfWeapon extends EquipableItem {
 	public int reachFactor( Char owner ){
 		return 1;
 	}
-	
+
 	public boolean canReach( Char owner, int target){
 		int reach = reachFactor(owner);
 		if (Dungeon.level.distance( owner.pos, target ) > reach){
@@ -271,9 +198,9 @@ abstract public class KindOfWeapon extends EquipableItem {
 			for (Char ch : Actor.chars()) {
 				if (ch != owner) passable[ch.pos] = false;
 			}
-			
+
 			PathFinder.buildDistanceMap(target, passable, reach);
-			
+
 			return PathFinder.distance[owner.pos] <= reach;
 		}
 	}
@@ -281,7 +208,7 @@ abstract public class KindOfWeapon extends EquipableItem {
 	public int defenseFactor( Char owner ) {
 		return 0;
 	}
-	
+
 	public int proc( Char attacker, Char defender, int damage ) {
 		return damage;
 	}
@@ -289,5 +216,5 @@ abstract public class KindOfWeapon extends EquipableItem {
 	public void hitSound( float pitch ){
 		Sample.INSTANCE.play(hitSound, 1, pitch * hitSoundPitch);
 	}
-	
+
 }

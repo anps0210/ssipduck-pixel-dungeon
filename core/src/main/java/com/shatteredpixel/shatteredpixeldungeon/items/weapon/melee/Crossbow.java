@@ -138,34 +138,6 @@ public class Crossbow extends MeleeWeapon {
 		}
 	}
 
-	@Override
-	protected void duelistAbility(Hero hero, Integer target) {
-		if (hero.buff(ChargedShot.class) != null){
-			GLog.w(Messages.get(this, "ability_cant_use"));
-			return;
-		}
-
-		beforeAbilityUsed(hero, null);
-		Buff.affect(hero, ChargedShot.class);
-		hero.sprite.operate(hero.pos);
-		hero.next();
-		afterAbilityUsed(hero);
-	}
-
-	@Override
-	public String abilityInfo() {
-		if (levelKnown){
-			return Messages.get(this, "ability_desc", 3+buffedLvl(), 3+buffedLvl());
-		} else {
-			return Messages.get(this, "typical_ability_desc", 3, 3);
-		}
-	}
-
-	@Override
-	public String upgradeAbilityStat(int level) {
-		return Integer.toString(3 + level);
-	}
-
 	public static class ChargedShot extends Buff{
 
 		{

@@ -406,7 +406,8 @@ public class WndBag extends WndTabbed {
 	}
 	
 	private Image icon( Bag bag ) {
-		if (bag instanceof VelvetPouch) {
+		if (bag instanceof com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves) return new com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite(bag);
+        if (bag instanceof VelvetPouch) {
 			return Icons.get( Icons.SEED_POUCH );
 		} else if (bag instanceof ScrollHolder) {
 			return Icons.get( Icons.SCROLL_HOLDER );

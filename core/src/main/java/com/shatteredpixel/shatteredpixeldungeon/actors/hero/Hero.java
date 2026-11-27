@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.actors.hero;
 
+import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.RolandAbilities;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.SakuyaTimeStop;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Excalibur;
@@ -294,7 +295,7 @@ public class Hero extends Char {
 			strBonus += (int)Math.floor(STR * (0.03f + 0.05f*pointsInTalent(Talent.STRONGMAN)));
 		}
 
-		return STR + strBonus;
+		return STR + strBonus + (buff(RolandAbilities.DurandalStrength.class) != null ? 2 : 0);
 	}
 
 	private static final String CLASS       = "class";
@@ -354,6 +355,7 @@ public class Hero extends Char {
 		STR = bundle.getInt( STRENGTH );
 
 		belongings.restoreFromBundle( bundle );
+        com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.grant(this);
         if (hasTalent(Talent.LIGHT_CLOAK)) {
             com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass watch =
                     belongings.getItem(com.shatteredpixel.shatteredpixeldungeon.items.artifacts.TimekeepersHourglass.class);
@@ -504,9 +506,6 @@ public class Hero extends Char {
 			Buff.affect( this, Combo.class ).hit( enemy );
 		}
 
-		if (hit && heroClass == HeroClass.DUELIST && wasEnemy){
-			Buff.affect( this, Sai.ComboStrikeTracker.class).addHit( attackTarget );
-		}
 
 		attackTarget = null;
 		return hit;
@@ -1611,7 +1610,7 @@ public class Hero extends Char {
 		default:
 		}
 		
-		return damage;
+		return RolandAbilities.consumeDamage(this, damage);
 	}
 	
 	@Override
@@ -2408,9 +2407,6 @@ public class Hero extends Char {
 			Buff.affect( this, Combo.class ).hit(attackTarget);
 		}
 
-		if (hit && heroClass == HeroClass.DUELIST && wasEnemy){
-			Buff.affect( this, Sai.ComboStrikeTracker.class).addHit( attackTarget );
-		}
 
 		curAction = null;
 		attackTarget = null;

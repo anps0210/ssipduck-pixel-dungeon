@@ -247,6 +247,13 @@ public class ItemSprite extends MovieClip {
 	}
 
 	public void frame( int image ){
+        if (image == ItemSpriteSheet.SILENCE_GLOVES) {
+            texture(Assets.Sprites.SILENCE_GLOVES);
+            frame(new com.watabou.utils.RectF(0,0,1,1));
+            width=height=16; updateVertices(); perspectiveRaise=0;
+            return;
+        }
+        texture(Assets.Sprites.ITEMS);
 		frame( ItemSpriteSheet.film.get( image ));
 
 		float height = ItemSpriteSheet.film.height( image );
@@ -385,6 +392,7 @@ public class ItemSprite extends MovieClip {
 	}
 
 	public static int pick( int index, int x, int y ) {
+        if(index==ItemSpriteSheet.SILENCE_GLOVES) return TextureCache.get(Assets.Sprites.SILENCE_GLOVES).getPixel(x*2,y*2);
 		SmartTexture tx = TextureCache.get( Assets.Sprites.ITEMS );
 		int rows = tx.width / SIZE;
 		int row = index / rows;

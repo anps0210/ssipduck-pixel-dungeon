@@ -79,34 +79,6 @@ public class Dagger extends MeleeWeapon {
 		return super.damageRoll(owner);
 	}
 
-	@Override
-	public String targetingPrompt() {
-		return Messages.get(this, "prompt");
-	}
-
-	public boolean useTargeting(){
-		return false;
-	}
-
-	@Override
-	protected void duelistAbility(Hero hero, Integer target) {
-		sneakAbility(hero, target, 5, 2+buffedLvl(), this);
-	}
-
-	@Override
-	public String abilityInfo() {
-		if (levelKnown){
-			return Messages.get(this, "ability_desc", 2+buffedLvl());
-		} else {
-			return Messages.get(this, "typical_ability_desc", 2);
-		}
-	}
-
-	@Override
-	public String upgradeAbilityStat(int level) {
-		return Integer.toString(2+level);
-	}
-
 	public static void sneakAbility(Hero hero, Integer target, int maxDist, int invisTurns, MeleeWeapon wep){
 		if (target == null) {
 			return;

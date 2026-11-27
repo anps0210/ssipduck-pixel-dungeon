@@ -104,7 +104,12 @@ public class WndQuickBag extends Window {
 					}
 
 					hide();
-					item.execute(Dungeon.hero);
+					if (bag instanceof com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves) {
+                        if (!((com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves)bag).quickAbility(Dungeon.hero,item)) {
+                            Game.scene().addToFront(new WndUseItem(null, item));
+                            return;
+                        }
+                    } else item.execute(Dungeon.hero);
 					if (item.usesTargeting && bag != null){
 						int idx = Dungeon.quickslot.getSlot(WndQuickBag.bag);
 						if (idx != -1){

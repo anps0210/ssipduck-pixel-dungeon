@@ -101,6 +101,7 @@ public class TengusMask extends Item {
 		
 		curUser.subClass = way;
 		Talent.initSubclassTalents(curUser);
+        com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.grant(curUser);
 
 		if (way == HeroSubClass.ASSASSIN && curUser.invisible > 0){
 			Buff.affect(curUser, Preparation.class);
