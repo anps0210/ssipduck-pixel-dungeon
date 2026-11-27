@@ -73,13 +73,20 @@ public class Bag extends Item implements Iterable<Item> {
 
 		super.execute( hero, action );
 
-		if (action.equals( AC_OPEN ) && !items.isEmpty()) {
+		if (action.equals( AC_OPEN ) && !quickUseItems(hero).isEmpty()) {
 			
 			GameScene.show( new WndQuickBag( this ) );
 			
 		}
 	}
 	
+    /** Items offered in the quick-use window; does not alter actual storage. */
+    public ArrayList<Item> quickUseItems(Hero hero) {
+        ArrayList<Item> result = new ArrayList<>();
+        for (Item item : this) result.add(item);
+        return result;
+    }
+
 	@Override
 	public boolean collect( Bag container ) {
 

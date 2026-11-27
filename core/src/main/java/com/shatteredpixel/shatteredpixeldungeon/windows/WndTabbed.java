@@ -251,6 +251,11 @@ public class WndTabbed extends Window {
 			
 			this.icon.copy(icon);
 			this.defaultFrame = icon.frame();
+            // frame() restores native texture dimensions on every layout.
+            // Preserve the supplied icon's display size, including custom textures.
+            this.icon.scale = new com.watabou.utils.PointF(
+                    icon.width() / (defaultFrame.width() * icon.texture.width),
+                    icon.height() / (defaultFrame.height() * icon.texture.height));
 		}
 		
 		@Override
@@ -266,14 +271,14 @@ public class WndTabbed extends Window {
 			super.layout();
 			
 			icon.frame(defaultFrame);
-			icon.x = x + (width - icon.width) / 2;
-			icon.y = y + (height - icon.height) / 2 - 1;
+			icon.x = x + (width - icon.width()) / 2;
+			icon.y = y + (height - icon.height()) / 2 - 1;
 			if (!selected) {
 				icon.y -= 2;
 				//if some of the icon is going into the window, cut it off
 				if (icon.y < y + CUT) {
 					RectF frame = icon.frame();
-					frame.top += (y + CUT - icon.y) / icon.texture.height;
+					frame.top += (y + CUT - icon.y) / (icon.texture.height * icon.scale.y);
 					icon.frame( frame );
 					icon.y = y + CUT;
 				}

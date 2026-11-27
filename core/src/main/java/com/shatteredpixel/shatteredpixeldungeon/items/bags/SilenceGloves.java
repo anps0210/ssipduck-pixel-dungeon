@@ -49,11 +49,24 @@ public class SilenceGloves extends Bag {
             if(!secondary.collect(bag))hero.belongings.secondWep=secondary;
         }
     }
+    @Override public ArrayList<Item> quickUseItems(Hero hero) {
+        ArrayList<Item> result=super.quickUseItems(hero);
+        if(enabled(hero)) {
+            KindOfWeapon equipped=hero.belongings.weapon();
+            if(equipped!=null && !result.contains(equipped))result.add(0,equipped);
+        }
+        return result;
+    }
+    @Override public String status() {
+        Hero hero=Dungeon.hero;
+        MeleeWeapon.Charger charger=hero==null?null:hero.buff(MeleeWeapon.Charger.class);
+        return enabled(hero) && charger!=null ? charger.charges+"/"+charger.chargeCap() : super.status();
+    }
     public boolean quickAbility(Hero hero, Item item){
-        if(!enabled(hero) || !contains(item) || !(item instanceof MeleeWeapon))return false;
+        if(!enabled(hero) || (!contains(item) && item!=hero.belongings.weapon()) || !(item instanceof MeleeWeapon))return false;
         MeleeWeapon weapon=(MeleeWeapon)item;
         if(RolandAbilities.kind(weapon)==RolandAbilities.Kind.NONE)return false;
-        if(!weapon.doEquip(hero))return false;
+        if(!weapon.isEquipped(hero) && !weapon.doEquip(hero))return false;
         weapon.execute(hero,MeleeWeapon.AC_ABILITY);
         return true;
     }

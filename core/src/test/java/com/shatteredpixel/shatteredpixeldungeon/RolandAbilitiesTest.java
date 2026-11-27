@@ -83,6 +83,7 @@ public class RolandAbilitiesTest {
         Buff.affect(hero,MeleeWeapon.Charger.class).charges=20;
     }
     @After public void cleanup(){
+        com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator.clearAction();
         for(Buff b:hero.buffs())hero.remove(b);
         for(Mob m:mobs)Actor.remove(m);
         Dungeon.hero=null;Dungeon.level=null;
@@ -314,5 +315,36 @@ public class RolandAbilitiesTest {
         hero.buff(LostInventory.class).detach();
         assertTrue(com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.enabled(hero));
         assertTrue(bag.contains(weapon));
+    }
+
+    @Test public void gloveQuickListIncludesEquippedWeaponWithoutStoringOrDuplicatingIt(){
+        com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves bag=fixer();
+        Rapier equipped=equip(new Rapier());
+        assertTrue(bag.items.isEmpty());assertEquals(Arrays.asList(equipped),bag.quickUseItems(hero));
+        Sword stored=new Sword();stored.collect(bag);
+        assertEquals(2,bag.quickUseItems(hero).size());assertEquals(1,bag.items.size());
+        assertFalse(bag.contains(equipped));
+        assertTrue(stored.doEquip(hero));
+        assertEquals(2,bag.quickUseItems(hero).size());assertTrue(bag.quickUseItems(hero).contains(equipped));
+        assertTrue(bag.quickUseItems(hero).contains(stored));assertFalse(bag.contains(stored));
+    }
+    @Test public void glovesDisplayTheSameSharedChargeAsTheEquippedWeapon(){
+        com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves bag=fixer();
+        Rapier equipped=equip(new Rapier());hero.lvl=17;
+        MeleeWeapon.Charger charger=hero.buff(MeleeWeapon.Charger.class);charger.charges=3;
+        assertEquals("3/7",bag.status());assertEquals(equipped.status(),bag.status());
+        charger.gainCharge(1);assertEquals("4/7",bag.status());
+        charger.charges=0;assertEquals("0/7",bag.status());
+    }
+    @Test public void furiosoIndicatorOnlyAppearsWhenReadyAndClearsImmediatelyAfterUse(){
+        fixer();talent(Talent.COMBINED_LETHALITY,1);equip(new Rapier());
+        MeleeWeapon.Charger charger=hero.buff(MeleeWeapon.Charger.class);
+        charger.fx(true);assertNull(com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator.action);
+        RolandAbilities.recordFamily(hero,RolandAbilities.Kind.WHEELS_ATK);
+        charger.refreshActionIndicator();assertNull(com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator.action);
+        completeFamilies();assertSame(charger,com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator.action);
+        Mob m=enemy(66);assertTrue(RolandAbilities.useFurioso(hero,m.pos));
+        assertNull(com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator.action);
+        charger.fx(true);assertNull(com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator.action);
     }
 }

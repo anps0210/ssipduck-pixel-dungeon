@@ -438,9 +438,7 @@ public class MeleeWeapon extends Weapon {
 				partialCharge = 0;
 			}
 
-			if (ActionIndicator.action != this && Dungeon.hero.subClass == HeroSubClass.CHAMPION) {
-				ActionIndicator.setAction(this);
-			}
+			refreshActionIndicator();
 
 			spend(TICK);
 			return true;
@@ -448,9 +446,8 @@ public class MeleeWeapon extends Weapon {
 
 		@Override
 		public void fx(boolean on) {
-			if (on && Dungeon.hero.subClass == HeroSubClass.CHAMPION) {
-				ActionIndicator.setAction(this);
-			}
+			if (on) refreshActionIndicator();
+            else ActionIndicator.clearAction(this);
 		}
 
 		@Override
@@ -458,6 +455,14 @@ public class MeleeWeapon extends Weapon {
 			super.detach();
 			ActionIndicator.clearAction(this);
 		}
+
+        public void refreshActionIndicator() {
+            Hero hero=target instanceof Hero ? (Hero)target : null;
+            if (RolandAbilities.furiosoReady(hero)
+                    && com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.enabled(hero)) {
+                if (ActionIndicator.action != this) ActionIndicator.setAction(this);
+            } else ActionIndicator.clearAction(this);
+        }
 
 		public int chargeCap(){ return Math.min(8, 2 + (Dungeon.hero.lvl - 1) / 3); }
 
@@ -495,7 +500,7 @@ public class MeleeWeapon extends Weapon {
 
 		@Override
 		public String actionName() {
-			return RolandAbilities.furiosoReady(Dungeon.hero) ? "Furioso" : Messages.get(com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.class,"name");
+			return "Furioso";
 		}
 
 		@Override
@@ -519,10 +524,7 @@ public class MeleeWeapon extends Weapon {
 		@Override
 		public void doAction() {
             if (RolandAbilities.furiosoReady(Dungeon.hero)) RolandAbilities.promptFurioso(Dungeon.hero);
-            else {
-                com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves bag = com.shatteredpixel.shatteredpixeldungeon.items.bags.SilenceGloves.find(Dungeon.hero);
-                if (bag != null) bag.execute(Dungeon.hero, com.shatteredpixel.shatteredpixeldungeon.items.bags.Bag.AC_OPEN);
-            }
+            refreshActionIndicator();
         }
 	}
 

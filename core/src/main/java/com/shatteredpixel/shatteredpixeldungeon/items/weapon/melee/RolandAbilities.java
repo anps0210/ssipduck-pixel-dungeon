@@ -267,7 +267,8 @@ public final class RolandAbilities {
                 || !hero.hasTalent(com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent.COMBINED_LETHALITY))return;
         int family=family(kind);
         if(family>=0)Buff.affect(hero,FuriosoProgress.class).mask|=1<<family;
-        com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator.refresh();
+        MeleeWeapon.Charger charger=hero.buff(MeleeWeapon.Charger.class);
+        if(charger!=null)charger.refreshActionIndicator();
         MeleeWeapon.updateQuickslot();
     }
     public static int furiosoCount(Hero hero) {
@@ -303,6 +304,8 @@ public final class RolandAbilities {
             if(!validFurioso(hero,cell)){hero.next();return;}
             MeleeWeapon w=(MeleeWeapon)hero.belongings.weapon();
             hero.buff(FuriosoProgress.class).mask=0;
+            MeleeWeapon.Charger charger=hero.buff(MeleeWeapon.Charger.class);
+            if(charger!=null)charger.refreshActionIndicator();
             int rank=hero.pointsInTalent(com.shatteredpixel.shatteredpixeldungeon.actors.hero.Talent.COMBINED_LETHALITY);
             hero.belongings.abilityWeapon=w;
             float delay=hero.attackDelay();
