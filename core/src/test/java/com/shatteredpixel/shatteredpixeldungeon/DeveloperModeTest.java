@@ -52,4 +52,29 @@ public class DeveloperModeTest {
         assertTrue(com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.IMPACT
             <com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.DURATION);
     }
+
+    private float motion(float t,int axis){return com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.motion(t,axis);}
+    @Test public void revisedFuriosoHasTwoRangedKnockbacksThenThreeCrossings(){
+        assertEquals(motion(0,0),motion(.62f,0),0);
+        assertTrue(motion(.21f,2)>motion(0,2));
+        assertTrue(motion(.45f,2)>motion(.21f,2));
+        assertTrue(motion(.73f,0)>motion(.73f,2));
+        assertEquals(motion(.85f,0),motion(1.02f,0),0);
+        assertTrue(motion(1.59f,0)<motion(1.59f,2));
+        assertTrue(motion(1.82f,0)>motion(1.82f,2));
+        assertTrue(motion(2.05f,0)<motion(2.05f,2));
+        assertEquals(motion(2.19f,0),motion(2.54f,0),0);
+    }
+    @Test public void revisedFuriosoHasDiagonalCrossingsShotgunChaseAndFinalPause(){
+        assertTrue(motion(3f,1)<0);assertTrue(motion(3.08f,1)>0);
+        assertTrue(motion(3.13f,1)<0);assertTrue(motion(3.21f,1)>0);
+        float shotgun=Math.abs(motion(3.53f,2)-motion(3.44f,2));
+        assertTrue(shotgun>3*Math.abs(motion(.21f,2)-motion(0,2)));
+        assertEquals(motion(3.44f,0),motion(3.73f,0),0);
+        assertTrue(Math.abs(motion(3.90f,0)-motion(3.90f,2))<Math.abs(motion(3.73f,0)-motion(3.73f,2)));
+        assertTrue(motion(4.23f,0)<motion(4.23f,2));
+        assertEquals(motion(4.39f,0),motion(5.04f,0),0);
+        assertEquals(motion(4.39f,1),motion(5.04f,1),0);
+        assertTrue(motion(5.38f,1)<0);assertTrue(motion(5.6f,1)>0);
+    }
 }

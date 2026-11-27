@@ -12,20 +12,59 @@ import com.watabou.utils.PointF;
 
 /** Presentation only: never moves actors, rolls damage, or advances game time. */
 public class WndFurioso extends Window {
-    public static final float ENTER=.45f, STRIKES=2.45f, HOLD=.18f, RETURN=.5f;
+    public static final float ENTER=.45f, STRIKES=5.6f, HOLD=.18f, RETURN=.5f;
     public static final float IMPACT=ENTER+STRIKES, DURATION=IMPACT+HOLD+RETURN;
-    // Alternating lunges, a short pause, then the final crossing slash.
-    private static final float[] TIMES={0,.14f,.30f,.47f,.66f,.84f,1.05f,1.25f,1.49f,1.72f,1.98f,2.20f,2.45f};
-    private static final float[] OFFSETS={-1,-.2f,.42f,-.32f,.38f,-.35f,.34f,-.28f,.4f,-.35f,-.85f,-.85f,.55f};
-    public static float attackOffset(float time){
-        for(int i=1;i<TIMES.length;i++)if(time<=TIMES[i]){
-            float p=Math.max(0,(time-TIMES[i-1])/(TIMES[i]-TIMES[i-1]));
-            // Hold briefly, then accelerate into each impact.
-            p=smooth(Math.min(1,p/.55f));
-            return OFFSETS[i-1]+(OFFSETS[i]-OFFSETS[i-1])*p;
+    // time, Roland x/y, target x/y. Coordinates are presentation-only stage units.
+    // Repeated positions deliberately hold a pose; short intervals are fast dashes.
+    private static final float[][] MOTION={
+        // 1. Two ranged hits: Roland stays back, target is knocked away twice.
+        {0,-.95f,0,.25f,0}, {.15f,-.95f,0,.25f,0},
+        {.21f,-.95f,0,.37f,0}, {.39f,-.95f,0,.37f,0},
+        {.45f,-.95f,0,.49f,0}, {.62f,-.95f,0,.49f,0},
+        // 2. Dash straight through.
+        {.73f,.86f,0,.49f,0}, {.85f,.86f,0,.49f,0},
+        // 3. One stationary hit (only target recoils).
+        {.92f,.86f,0,.45f,0}, {1.02f,.86f,0,.49f,0},
+        // 4. Approach, stop, then attack.
+        {1.19f,.69f,0,.49f,0}, {1.33f,.69f,0,.49f,0},
+        {1.39f,.69f,0,.46f,0}, {1.50f,.69f,0,.49f,0},
+        // 5. Three fast crossings, with readable pauses between them.
+        {1.59f,.02f,0,.49f,0}, {1.73f,.02f,0,.49f,0},
+        {1.82f,.86f,0,.49f,0}, {1.96f,.86f,0,.49f,0},
+        {2.05f,.02f,0,.49f,0}, {2.19f,.02f,0,.49f,0},
+        // 6. Two attacks from the same position.
+        {2.25f,.02f,0,.53f,0}, {2.35f,.02f,0,.49f,0},
+        {2.43f,.02f,0,.54f,0}, {2.54f,.02f,0,.49f,0},
+        // 7. Lift and drop: body motion only, no weapon/effect.
+        {2.70f,.13f,-.24f,.49f,0}, {2.79f,.13f,.05f,.49f,.04f},
+        {2.94f,.13f,0,.49f,0},
+        // 8. Two diagonal crossings form an X, then a near-instant cross-over.
+        {3.00f,.08f,-.20f,.49f,0}, {3.08f,.88f,.16f,.49f,0},
+        {3.13f,.88f,-.20f,.49f,0}, {3.21f,.08f,.16f,.49f,0},
+        {3.26f,.90f,0,.49f,0}, {3.44f,.90f,0,.49f,0},
+        // 9. Shotgun: large knockback away from Roland, who stands on the right.
+        {3.53f,.90f,0,-.18f,0}, {3.73f,.90f,0,-.18f,0},
+        // 10. Chase and strike down.
+        {3.90f,.06f,-.20f,-.18f,0}, {4.00f,.06f,.04f,-.18f,.03f},
+        {4.12f,.06f,0,-.18f,0},
+        // 11. Fast rising cross to the other side.
+        {4.23f,-.48f,-.22f,-.18f,0}, {4.39f,-.48f,0,-.18f,0},
+        // 12. Pause, wind up, then a large downward movement.
+        {5.04f,-.48f,0,-.18f,0}, {5.38f,-.40f,-.32f,-.18f,0},
+        {STRIKES,-.40f,.06f,-.18f,.04f}
+    };
+    /** component: 0=Roland x, 1=Roland y, 2=target x, 3=target y. */
+    public static float motion(float time,int component){
+        if(component<0 || component>3)throw new IllegalArgumentException();
+        int column=component+1;
+        if(time<=0)return MOTION[0][column];
+        for(int i=1;i<MOTION.length;i++)if(time<=MOTION[i][0]){
+            float p=smooth((time-MOTION[i-1][0])/(MOTION[i][0]-MOTION[i-1][0]));
+            return MOTION[i-1][column]+(MOTION[i][column]-MOTION[i-1][column])*p;
         }
-        return OFFSETS[OFFSETS.length-1];
+        return MOTION[MOTION.length-1][column];
     }
+    public static float attackOffset(float time){return motion(time,0);}
     private static float smooth(float x){return x*x*(3-2*x);}
     private final Hero hero;
     private final Char enemy;
@@ -68,15 +107,18 @@ public class WndFurioso extends Window {
         float blend=enter*(1-back);
         dim.alpha(.86f*blend);
         float floor=height*.57f;
-        float tx=width*.64f-target.width*targetStageScale/2;
-        float ty=floor-target.height*targetStageScale;
-        float offset=attackOffset(Math.max(0,Math.min(STRIKES,time-ENTER)));
-        float px=width*.64f+offset*width*.32f-player.width*stageScale/2;
-        float py=floor-player.height*stageScale;
+        float phase=Math.max(0,Math.min(STRIKES,time-ENTER));
+        float span=width*.28f;
+        float playerCenter=width*.5f+motion(phase,0)*span;
+        float targetCenter=width*.5f+motion(phase,2)*span;
+        float tx=targetCenter-target.width*targetStageScale/2;
+        float ty=floor-target.height*targetStageScale+motion(phase,3)*span;
+        float px=playerCenter-player.width*stageScale/2;
+        float py=floor-player.height*stageScale+motion(phase,1)*span;
         place(player,playerStart.x+(px-playerStart.x)*blend,playerStart.y+(py-playerStart.y)*blend,playerScale+(stageScale-playerScale)*blend);
         place(target,targetStart.x+(tx-targetStart.x)*blend,targetStart.y+(ty-targetStart.y)*blend,targetScale+(targetStageScale-targetScale)*blend);
-        player.flipHorizontal=px>tx;player.frame(player.frame());
-        target.flipHorizontal=false;target.frame(target.frame());
+        player.flipHorizontal=playerCenter>targetCenter;player.frame(player.frame());
+        target.flipHorizontal=targetCenter>playerCenter;target.frame(target.frame());
         if(applied && !enemy.isAlive())target.alpha(1-back);
     }
     @Override public void update(){
