@@ -7,12 +7,36 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.audio.Sample;
+import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.watabou.utils.Point;
 import com.watabou.utils.PointF;
 
 /** Presentation only: never moves actors, rolls damage, or advances game time. */
 public class WndFurioso extends Window {
-    public static final float ENTER=.45f, STRIKES=5.6f, HOLD=.18f, RETURN=.5f;
+    public static final float ENTER=.45f, STRIKES=10.47f, RETURN=.5f;
+    public static final float SOUND_DURATION=13.696f;
+    public static final float HOLD=SOUND_DURATION-STRIKES-RETURN;
+    // Original choreography cues mapped to transients in the supplied audio (seconds).
+    private static final float[][] AUDIO_CUES={
+        {0,0},{.15f,.14f},{.21f,.20f},{.39f,.65f},{.45f,.71f},{.62f,1.23f},
+        {.73f,1.34f},{.85f,1.90f},{.92f,1.96f},{1.02f,2.08f},
+        {1.19f,2.55f},{1.33f,2.78f},{1.39f,2.84f},{1.50f,3.20f},
+        {1.59f,3.30f},{1.73f,3.58f},{1.82f,3.68f},{1.96f,4.07f},
+        {2.05f,4.17f},{2.19f,4.86f},{2.25f,4.92f},{2.35f,5.04f},
+        {2.43f,5.59f},{2.54f,5.73f},{2.70f,6.10f},{2.79f,6.22f},{2.94f,6.38f},
+        {3.00f,7.04f},{3.08f,7.12f},{3.44f,7.75f},{3.53f,7.84f},{3.73f,8.05f},
+        {3.90f,8.70f},{4.00f,8.82f},{4.12f,9.34f},{4.23f,9.45f},{4.39f,9.62f},
+        {5.04f,10.10f},{5.38f,10.34f},{5.60f,10.47f}
+    };
+    public static float audioTime(float cue){
+        if(cue<=0)return 0;
+        for(int i=1;i<AUDIO_CUES.length;i++)if(cue<=AUDIO_CUES[i][0]){
+            float p=(cue-AUDIO_CUES[i-1][0])/(AUDIO_CUES[i][0]-AUDIO_CUES[i-1][0]);
+            return AUDIO_CUES[i-1][1]+p*(AUDIO_CUES[i][1]-AUDIO_CUES[i-1][1]);
+        }
+        return STRIKES;
+    }
     public static final float IMPACT=ENTER+STRIKES, DURATION=IMPACT+HOLD+RETURN;
     // time, Roland x/y, target x/y. Coordinates are presentation-only stage units.
     // Repeated positions deliberately hold a pose; short intervals are fast dashes.
@@ -50,8 +74,9 @@ public class WndFurioso extends Window {
         {4.23f,-.48f,-.22f,-.18f,0}, {4.39f,-.48f,0,-.18f,0},
         // 12. Pause, wind up, then a large downward movement.
         {5.04f,-.48f,0,-.18f,0}, {5.38f,-.40f,-.32f,-.18f,0},
-        {STRIKES,-.40f,.06f,-.18f,.04f}
+        {5.60f,-.40f,.06f,-.18f,.04f}
     };
+    static {for(float[] frame:MOTION)frame[0]=audioTime(frame[0]);}
     /** component: 0=Roland x, 1=Roland y, 2=target x, 3=target y. */
     public static float motion(float time,int component){return motion(time,component,.55f);}
     public static float motion(float time,int component,float minimumGap){
@@ -66,9 +91,9 @@ public class WndFurioso extends Window {
     }
     private static float keyframe(int index,int column,float minimumGap){
         float[] frame=MOTION[index];
-        if(column!=1 || frame[0]<.73f)return frame[column];
+        if(column!=1 || frame[0]<1.34f)return frame[column];
         // Use a stable anchor so target recoil doesn't drag Roland along with it.
-        float anchor=frame[0]<=3.73f?.49f:-.18f;
+        float anchor=frame[0]<=8.05f?.49f:-.18f;
         float delta=frame[1]-anchor;
         float distance=minimumGap+Math.max(0,Math.abs(delta)-.20f)*.4f;
         return anchor+Math.copySign(distance,delta);
@@ -84,7 +109,8 @@ public class WndFurioso extends Window {
     private final boolean playerVisible,targetVisible;
     private final Runnable impact,complete,cancel;
     private float elapsed;
-    private boolean applied,finished;
+    private boolean applied,finished,soundStarted;
+    private long soundId=-1;
 
     public WndFurioso(Hero hero,Char enemy,Runnable impact,Runnable complete,Runnable cancel){
         super((int)PixelScene.uiCamera.width,(int)PixelScene.uiCamera.height);
@@ -137,6 +163,12 @@ public class WndFurioso extends Window {
     @Override public void update(){
         super.update();
         elapsed+=Game.elapsed;
+        if(!soundStarted && elapsed>=ENTER){
+            soundStarted=true;
+            // Start animation time zero on the same frame as audio playback.
+            elapsed=ENTER;
+            soundId=Sample.INSTANCE.play(Assets.Sounds.FURIOSO);
+        }
         pose(elapsed);
         if(!applied && elapsed>=IMPACT){applied=true;impact.run();}
         if(elapsed>=DURATION)hide();
@@ -145,6 +177,7 @@ public class WndFurioso extends Window {
     @Override public void destroy(){
         if(!finished){
             finished=true;
+            Sample.INSTANCE.stop(Assets.Sounds.FURIOSO,soundId);
             hero.sprite.visible=playerVisible;enemy.sprite.visible=targetVisible;
             if(applied)complete.run();else cancel.run();
         }

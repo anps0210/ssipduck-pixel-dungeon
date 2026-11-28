@@ -115,6 +115,11 @@ public enum Sample {
 		}
 	}
 
+    /** Stop only this playback instance, without interrupting unrelated sounds. */
+    public synchronized void stop(Object asset,long playbackId) {
+        if(playbackId>=0 && ids.containsKey(asset))ids.get(asset).stop(playbackId);
+    }
+
 	private class DelayedSoundEffect{
 		Object id;
 		float delay;

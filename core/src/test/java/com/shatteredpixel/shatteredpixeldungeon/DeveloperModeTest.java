@@ -53,7 +53,7 @@ public class DeveloperModeTest {
             <com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.DURATION);
     }
 
-    private float motion(float t,int axis){return com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.motion(t,axis);}
+    private float motion(float t,int axis){return com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.motion(com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.audioTime(t),axis);}
     @Test public void revisedFuriosoHasTwoRangedKnockbacksThenThreeCrossings(){
         assertEquals(motion(0,0),motion(.62f,0),0);
         assertTrue(motion(.21f,2)>motion(0,2));
@@ -87,8 +87,8 @@ public class DeveloperModeTest {
 
     @Test public void meleeSpacingAdaptsToLargeEnemiesAndKeepsApproachMovement(){
         for(float time:new float[]{.73f,1.19f,1.50f,1.59f,1.82f,2.05f,2.70f,3.08f,3.90f,4.23f,5.6f}){
-            float normal=com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.motion(time,0,.55f);
-            float large=com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.motion(time,0,.85f);
+            float normal=com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.motion(com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.audioTime(time),0,.55f);
+            float large=com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.motion(com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.audioTime(time),0,.85f);
             float target=motion(time,2);
             assertTrue(Math.abs(normal-target)>=.55f-.0001f);
             assertTrue(Math.abs(large-target)>=.85f-.0001f);
@@ -98,5 +98,19 @@ public class DeveloperModeTest {
         // Crossing remains continuous and passes through the target, without snapping sides.
         float left=motion(3f,0),right=motion(3.08f,0);
         assertEquals((left+right)/2,motion(3.04f,0),.0001f);
+    }
+
+    @Test public void furiosoAudioCuesMatchImpactsAndPreserveFinalReverb(){
+        assertEquals(.20f,com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.audioTime(.21f),.0001f);
+        assertEquals(.71f,com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.audioTime(.45f),.0001f);
+        assertEquals(7.84f,com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.audioTime(3.53f),.0001f);
+        assertEquals(10.47f,com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.STRIKES,0);
+        assertEquals(com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.SOUND_DURATION,
+            com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.DURATION-com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.ENTER,.0001f);
+        float previous=-1;
+        for(float t=0;t<5.6f;t+=.01f){
+            float mapped=com.shatteredpixel.shatteredpixeldungeon.windows.WndFurioso.audioTime(t);
+            assertTrue(mapped>previous);previous=mapped;
+        }
     }
 }
